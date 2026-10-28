@@ -140,11 +140,12 @@ export default function TelemetryCharts({ packet, isPaused }) {
     : '--';
 
   // Condition checks for Normal vs High
+  const isOnline = packet !== null && packet !== undefined;
   const tempVal = packet?.temp;
-  const isHighTemp = tempVal !== null && tempVal !== undefined && tempVal > 32.0;
+  const isHighTemp = isOnline && tempVal !== null && tempVal !== undefined && tempVal > 32.0;
 
   const pressVal = packet?.press;
-  const isHighPress = pressVal !== null && pressVal !== undefined && pressVal > 1020.0;
+  const isHighPress = isOnline && pressVal !== null && pressVal !== undefined && pressVal > 1020.0;
 
   return (
     <div className="telemetry-grid">
@@ -163,7 +164,9 @@ export default function TelemetryCharts({ packet, isPaused }) {
             </div>
           </div>
           <div className="telem-badges">
-            <span className="cond-tag cond-normal">NORMAL</span>
+            <span className={`cond-tag ${isOnline ? 'cond-normal' : 'cond-offline'}`}>
+              {isOnline ? 'NORMAL' : 'STANDBY'}
+            </span>
             <span className="card-tag">MPU6050</span>
           </div>
         </div>
@@ -187,7 +190,9 @@ export default function TelemetryCharts({ packet, isPaused }) {
             </div>
           </div>
           <div className="telem-badges">
-            <span className="cond-tag cond-normal">NORMAL</span>
+            <span className={`cond-tag ${isOnline ? 'cond-normal' : 'cond-offline'}`}>
+              {isOnline ? 'NORMAL' : 'STANDBY'}
+            </span>
             <span className="card-tag">MPU6050</span>
           </div>
         </div>
@@ -206,8 +211,8 @@ export default function TelemetryCharts({ packet, isPaused }) {
             </span>
           </div>
           <div className="telem-badges">
-            <span className={`cond-tag ${isHighPress ? 'cond-high' : 'cond-normal'}`}>
-              {isHighPress ? '▲ HIGH' : 'NORMAL'}
+            <span className={`cond-tag ${isOnline ? (isHighPress ? 'cond-high' : 'cond-normal') : 'cond-offline'}`}>
+              {isOnline ? (isHighPress ? '▲ HIGH' : 'NORMAL') : 'STANDBY'}
             </span>
             <span className="card-tag">BMP280</span>
           </div>
@@ -227,7 +232,9 @@ export default function TelemetryCharts({ packet, isPaused }) {
             </span>
           </div>
           <div className="telem-badges">
-            <span className="cond-tag cond-normal">NORMAL</span>
+            <span className={`cond-tag ${isOnline ? 'cond-normal' : 'cond-offline'}`}>
+              {isOnline ? 'NORMAL' : 'STANDBY'}
+            </span>
             <span className="card-tag">BMP280</span>
           </div>
         </div>
@@ -246,8 +253,8 @@ export default function TelemetryCharts({ packet, isPaused }) {
             </span>
           </div>
           <div className="telem-badges">
-            <span className={`cond-tag ${isHighTemp ? 'cond-high' : 'cond-normal'}`}>
-              {isHighTemp ? '▲ HIGH' : 'NORMAL'}
+            <span className={`cond-tag ${isOnline ? (isHighTemp ? 'cond-high' : 'cond-normal') : 'cond-offline'}`}>
+              {isOnline ? (isHighTemp ? '▲ HIGH' : 'NORMAL') : 'STANDBY'}
             </span>
             <span className="card-tag">DHT11 / BMP</span>
           </div>
@@ -267,7 +274,9 @@ export default function TelemetryCharts({ packet, isPaused }) {
             </span>
           </div>
           <div className="telem-badges">
-            <span className="cond-tag cond-normal">NORMAL</span>
+            <span className={`cond-tag ${isOnline ? 'cond-normal' : 'cond-offline'}`}>
+              {isOnline ? 'NORMAL' : 'STANDBY'}
+            </span>
             <span className="card-tag">DHT11</span>
           </div>
         </div>

@@ -905,6 +905,12 @@ header.mission-header {
   letter-spacing: 0.5px;
 }
 
+.cond-offline {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text-dim);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
 .cond-normal {
   background: rgba(16, 185, 129, 0.15);
   color: var(--status-green);

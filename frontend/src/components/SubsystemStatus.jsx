@@ -2,18 +2,23 @@ import React from 'react';
 import { Activity, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 export default function SubsystemStatus({ packet, linkStatus }) {
+  const isOnline = linkStatus === 'ok' && packet !== null;
+
   // Threshold calculations
-  const temp = packet?.temp;
-  const press = packet?.press;
-  const hum = packet?.hum;
-  const ax = packet?.ax;
-  const ay = packet?.ay;
-  const az = packet?.az;
-  const hasGpsFix = packet?.gps_fix;
+  const temp = isOnline ? packet?.temp : null;
+  const press = isOnline ? packet?.press : null;
+  const hum = isOnline ? packet?.hum : null;
+  const ax = isOnline ? packet?.ax : null;
+  const ay = isOnline ? packet?.ay : null;
+  const az = isOnline ? packet?.az : null;
+  const hasGpsFix = isOnline ? packet?.gps_fix : false;
 
   // Temperature Status (> 32°C is HIGH, < 10°C is LOW, else NOMINAL)
-  let tempStatus = { text: 'NOMINAL', color: 'nominal', isAlert: false };
-  if (temp !== null && temp !== undefined && !isNaN(temp)) {
+  let tempStatus = isOnline
+    ? { text: 'NOMINAL', color: 'nominal', isAlert: false }
+    : { text: 'OFFLINE', color: 'simulated', isAlert: false };
+
+  if (isOnline && temp !== null && temp !== undefined && !isNaN(temp)) {
     if (temp > 32.0) {
       tempStatus = { text: `HIGH (${Number(temp).toFixed(1)}°C)`, color: 'alert-high', isAlert: true };
     } else if (temp < 10.0) {
@@ -22,8 +27,11 @@ export default function SubsystemStatus({ packet, linkStatus }) {
   }
 
   // Pressure Status (> 1020 hPa is HIGH, < 980 hPa is LOW, else NOMINAL)
-  let pressStatus = { text: 'NOMINAL', color: 'nominal', isAlert: false };
-  if (press !== null && press !== undefined && !isNaN(press)) {
+  let pressStatus = isOnline
+    ? { text: 'NOMINAL', color: 'nominal', isAlert: false }
+    : { text: 'OFFLINE', color: 'simulated', isAlert: false };
+
+  if (isOnline && press !== null && press !== undefined && !isNaN(press)) {
     if (press > 1020.0) {
       pressStatus = { text: `HIGH (${Number(press).toFixed(1)} hPa)`, color: 'alert-high', isAlert: true };
     } else if (press < 980.0) {
@@ -32,8 +40,11 @@ export default function SubsystemStatus({ packet, linkStatus }) {
   }
 
   // Attitude Status
-  let attStatus = { text: 'NOMINAL', color: 'nominal' };
-  if (ax !== null && ay !== null && az !== null && ax !== undefined) {
+  let attStatus = isOnline
+    ? { text: 'NOMINAL', color: 'nominal' }
+    : { text: 'OFFLINE', color: 'simulated' };
+
+  if (isOnline && ax !== null && ay !== null && az !== null && ax !== undefined) {
     const gMag = Math.hypot(ax, ay, az);
     if (gMag > 2.5) {
       attStatus = { text: `HIGH G-FORCE (${gMag.toFixed(1)}g)`, color: 'alert-high' };
@@ -41,12 +52,9 @@ export default function SubsystemStatus({ packet, linkStatus }) {
   }
 
   // Navigation Status
-  let navStatus = { text: 'SIMULATED', color: 'simulated' };
-  if (hasGpsFix) {
-    navStatus = { text: '3D FIX LOCKED', color: 'nominal' };
-  } else if (packet?.lat === null && packet?.lon === null) {
-    navStatus = { text: 'SEARCHING', color: 'simulated' };
-  }
+  let navStatus = isOnline
+    ? (hasGpsFix ? { text: '3D FIX LOCKED', color: 'nominal' } : { text: 'SEARCHING', color: 'simulated' })
+    : { text: 'OFFLINE', color: 'simulated' };
 
   // Controller overall health
   const hasAnyAlert = tempStatus.isAlert || pressStatus.isAlert;
@@ -66,14 +74,14 @@ export default function SubsystemStatus({ packet, linkStatus }) {
           <div className="meter-item">
             <div className="meter-label-row">
               <span className="meter-title">ONBOARD CONTROLLER</span>
-              <span className={`meter-status ${hasAnyAlert ? 'text-amber' : 'text-cyan'}`}>
-                {hasAnyAlert ? 'ATTENTION' : 'NOMINAL'}
+              <span className={`meter-status ${isOnline ? (hasAnyAlert ? 'text-amber' : 'text-cyan') : 'text-dim'}`}>
+                {isOnline ? (hasAnyAlert ? 'ATTENTION' : 'NOMINAL') : 'STANDBY'}
               </span>
             </div>
             <div className="meter-track">
               <div
-                className={`meter-bar ${hasAnyAlert ? 'meter-amber' : 'meter-cyan'}`}
-                style={{ width: hasAnyAlert ? '85%' : '100%' }}
+                className={`meter-bar ${isOnline ? (hasAnyAlert ? 'meter-amber' : 'meter-cyan') : 'meter-dim'}`}
+                style={{ width: isOnline ? (hasAnyAlert ? '85%' : '100%') : '0%' }}
               />
             </div>
           </div>
@@ -81,14 +89,14 @@ export default function SubsystemStatus({ packet, linkStatus }) {
           <div className="meter-item">
             <div className="meter-label-row">
               <span className="meter-title">TELEMETRY LINK</span>
-              <span className={`meter-status ${linkStatus === 'ok' ? 'text-green' : 'text-red'}`}>
-                {linkStatus === 'ok' ? 'CONNECTED*' : 'DISCONNECTED'}
+              <span className={`meter-status ${isOnline ? 'text-green' : 'text-red'}`}>
+                {isOnline ? 'CONNECTED (LIVE)' : 'DISCONNECTED'}
               </span>
             </div>
             <div className="meter-track">
               <div
-                className={`meter-bar ${linkStatus === 'ok' ? 'meter-green' : 'meter-red'}`}
-                style={{ width: linkStatus === 'ok' ? '100%' : '15%' }}
+                className={`meter-bar ${isOnline ? 'meter-green' : 'meter-red'}`}
+                style={{ width: isOnline ? '100%' : '5%' }}
               />
             </div>
           </div>
@@ -96,14 +104,14 @@ export default function SubsystemStatus({ packet, linkStatus }) {
           <div className="meter-item">
             <div className="meter-label-row">
               <span className="meter-title">GPS RECEIVER</span>
-              <span className={`meter-status ${hasGpsFix ? 'text-green' : 'text-amber'}`}>
-                {hasGpsFix ? '3D FIX (LOCKED)' : 'SIMULATED'}
+              <span className={`meter-status ${isOnline ? (hasGpsFix ? 'text-green' : 'text-amber') : 'text-dim'}`}>
+                {isOnline ? (hasGpsFix ? '3D FIX (LOCKED)' : 'SEARCHING') : 'OFFLINE'}
               </span>
             </div>
             <div className="meter-track">
               <div
-                className={`meter-bar ${hasGpsFix ? 'meter-green' : 'meter-amber'}`}
-                style={{ width: hasGpsFix ? '100%' : '55%' }}
+                className={`meter-bar ${isOnline ? (hasGpsFix ? 'meter-green' : 'meter-amber') : 'meter-dim'}`}
+                style={{ width: isOnline ? (hasGpsFix ? '100%' : '35%') : '0%' }}
               />
             </div>
           </div>

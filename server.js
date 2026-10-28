@@ -259,14 +259,21 @@ async function listSerialPortsAndExit() {
 // ==========================================
 const args = process.argv.slice(2);
 const isSim = args.includes('--sim') || args.includes('sim') || process.env.npm_lifecycle_event === 'sim' || process.env.SIMULATOR === 'true';
-const isCloud = process.env.RENDER || process.env.RAILWAY_STATIC_URL || process.env.NODE_ENV === 'production';
 
 server.listen(PORT, '0.0.0.0', async () => {
-  if (isSim || isCloud) {
+  if (isSim) {
+    // Only run simulator if explicitly requested via --sim or SIMULATOR=true
     startSimulator();
   } else if (args.length > 0 && !args[0].startsWith('--')) {
     startSerialMode(args[0]);
   } else {
-    await listSerialPortsAndExit();
+    console.log('====================================================');
+    console.log('  CUBESAT MISSION CONTROL - LIVE HARDWARE MODE      ');
+    console.log('====================================================');
+    console.log(`Web Dashboard: http://localhost:${PORT}`);
+    console.log('Telemetry link standby: Waiting for real ESP32 packets...');
+    console.log('  -> Live USB Forwarder: node telemetry-forwarder.js <PORT> <URL>');
+    console.log('  -> HTTP Ingestion:     POST /api/telemetry');
+    console.log('  -> (To run simulator for testing, use: npm run sim)\n');
   }
 });
