@@ -86,9 +86,10 @@ export default function GpsNavigation3D({ packet }) {
     camera.position.set(0, 1.2, 3.4);
     camera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 1);
 
     // Ambient and point light
     const amb = new THREE.AmbientLight(0xffffff, 0.9);

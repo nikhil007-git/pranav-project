@@ -31,9 +31,10 @@ export default function CubeSatViewer({ packet }) {
     camera.position.set(2.8, 2.2, 3.2);
     camera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 1);
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
