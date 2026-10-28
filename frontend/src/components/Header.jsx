@@ -44,10 +44,10 @@ export default function Header({
         </div>
         <div>
           <div className="brand-title">
-            ORBITRA // CUBESAT-1 <span className="react-badge">REACT</span>
+            ORBITRA // CUBESAT-1 <span className="react-badge">TEAM FAHRENHEIT-451</span>
           </div>
           <div className="brand-subtitle">
-            Telemetry & ADCS Mission Control Ground Station
+            Team Fahrenheit-451 // Telemetry & ADCS Mission Control
           </div>
         </div>
       </div>

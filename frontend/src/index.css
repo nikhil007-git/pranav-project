@@ -547,10 +547,11 @@ header.mission-header {
 }
 
 .telem-title {
-  font-family: var(--font-heading);
-  font-size: 0.72rem;
-  letter-spacing: 1.2px;
-  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.74rem;
+  letter-spacing: 1px;
+  color: #9cb3d9;
   text-transform: uppercase;
 }
 

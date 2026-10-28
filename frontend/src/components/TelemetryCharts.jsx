@@ -203,7 +203,7 @@ export default function TelemetryCharts({ packet, isPaused }) {
       <div className="glass-card telemetry-card">
         <div className="telem-top">
           <div className="telem-info">
-            <span className="telem-title">Estimated Altitude</span>
+            <span className="telem-title">Altitude (Estimated)</span>
             <span className="telem-val">
               {formatVal(packet?.alt, 1)} <small style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>m</small>
             </span>
