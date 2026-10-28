@@ -101,7 +101,63 @@ float cachedDhtTemp = NAN;
 float cachedDhtHum = NAN;
 
 bool mpuAvailable = false;
+bool mpuRawMode = false;
+uint8_t mpuAddress = 0x68;
 bool bmpAvailable = false;
+
+// --------------------------------------------------
+// Raw I2C Driver for Clone/Compatible MPU6050 / MPU6500
+// --------------------------------------------------
+void initRawMPU(uint8_t addr) {
+  // 1. Wake up the device by clearing SLEEP bit in PWR_MGMT_1 (0x6B)
+  Wire.beginTransmission(addr);
+  Wire.write(0x6B);
+  Wire.write(0x00);
+  Wire.endTransmission();
+  delay(10);
+
+  // 2. Set Accelerometer full-scale range: ±4g (0x08)
+  Wire.beginTransmission(addr);
+  Wire.write(0x1C);
+  Wire.write(0x08);
+  Wire.endTransmission();
+
+  // 3. Set Gyroscope full-scale range: ±500 deg/s (0x08)
+  Wire.beginTransmission(addr);
+  Wire.write(0x1B);
+  Wire.write(0x08);
+  Wire.endTransmission();
+}
+
+bool readRawMPU(uint8_t addr, float &ax, float &ay, float &az, float &gx, float &gy, float &gz) {
+  Wire.beginTransmission(addr);
+  Wire.write(0x3B); // Starting register: ACCEL_XOUT_H
+  if (Wire.endTransmission(false) != 0) return false;
+
+  if (Wire.requestFrom((uint8_t)addr, (size_t)14) != 14) return false;
+
+  int16_t rawAx = (Wire.read() << 8) | Wire.read();
+  int16_t rawAy = (Wire.read() << 8) | Wire.read();
+  int16_t rawAz = (Wire.read() << 8) | Wire.read();
+  int16_t rawTemp = (Wire.read() << 8) | Wire.read();
+  (void)rawTemp;
+  int16_t rawGx = (Wire.read() << 8) | Wire.read();
+  int16_t rawGy = (Wire.read() << 8) | Wire.read();
+  int16_t rawGz = (Wire.read() << 8) | Wire.read();
+
+  // Convert raw 16-bit to physical units:
+  // ±4g range: sensitivity scale factor is 8192 LSB/g
+  ax = (float)rawAx / 8192.0f;
+  ay = (float)rawAy / 8192.0f;
+  az = (float)rawAz / 8192.0f;
+
+  // ±500 deg/s range: sensitivity scale factor is 65.5 LSB/(deg/s)
+  gx = (float)rawGx / 65.5f;
+  gy = (float)rawGy / 65.5f;
+  gz = (float)rawGz / 65.5f;
+
+  return true;
+}
 
 // --------------------------------------------------
 // Setup
@@ -119,13 +175,31 @@ void setup() {
   Wire.setClock(100000); // Standard 100kHz I2C clock for maximum stability
   delay(150);            // Allow MPU-6050 power rail to settle
 
-  // Try connecting to MPU6050 with retries (checks both 0x68 and 0x69)
+  // Proactively wake up chip by clearing SLEEP bit in PWR_MGMT_1 (register 0x6B)
+  Wire.beginTransmission(0x68);
+  Wire.write(0x6B);
+  Wire.write(0x00);
+  Wire.endTransmission();
+  delay(20);
+
+  // Read WHO_AM_I register (0x75)
+  uint8_t whoami = 0;
+  Wire.beginTransmission(0x68);
+  Wire.write(0x75);
+  if (Wire.endTransmission(false) == 0) {
+    if (Wire.requestFrom((uint8_t)0x68, (size_t)1) == 1) {
+      whoami = Wire.read();
+    }
+  }
+
+  // Try standard Adafruit initialization
   for (int attempt = 1; attempt <= 3 && !mpuAvailable; attempt++) {
     if (mpu.begin(0x68, &Wire) || mpu.begin(0x69, &Wire)) {
       mpuAvailable = true;
+      mpuRawMode = false;
       break;
     }
-    delay(100);
+    delay(50);
   }
 
   if (mpuAvailable) {
@@ -134,22 +208,40 @@ void setup() {
     mpu.setGyroRange(MPU6050_RANGE_500_DEG);
     mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
   } else {
-    Serial.println("[WARN] MPU6050 not detected at 0x68 or 0x69 on SDA=21, SCL=22!");
-    Serial.println("[DIAGNOSTIC] Running I2C bus scan on GPIO 21 (SDA) & GPIO 22 (SCL)...");
-    int foundDevices = 0;
-    for (byte addr = 1; addr < 127; addr++) {
-      Wire.beginTransmission(addr);
-      byte err = Wire.endTransmission();
-      if (err == 0) {
-        Serial.printf("   -> Discovered active I2C device at address 0x%02X\n", addr);
-        foundDevices++;
-      }
+    // Check if device is responding at 0x68 or 0x69
+    uint8_t detectedAddr = 0;
+    Wire.beginTransmission(0x68);
+    if (Wire.endTransmission() == 0) detectedAddr = 0x68;
+    else {
+      Wire.beginTransmission(0x69);
+      if (Wire.endTransmission() == 0) detectedAddr = 0x69;
     }
-    if (foundDevices == 0) {
-      Serial.println("   -> [NO I2C RESPONSE] No devices found on GPIO 21 & 22!");
-      Serial.println("   -> CHECK 1: If using GY-521, connect VCC to ESP32 'VIN / 5V' instead of 3.3V (due to onboard regulator drop).");
-      Serial.println("   -> CHECK 2: Connect AD0 pin of MPU6050 to GND.");
-      Serial.println("   -> CHECK 3: Verify SDA->GPIO21 and SCL->GPIO22 are not reversed or loose.");
+
+    if (detectedAddr != 0) {
+      Serial.printf("[OK] Active IMU found at 0x%02X (WHO_AM_I = 0x%02X). Initializing Native Driver...\n", detectedAddr, whoami);
+      initRawMPU(detectedAddr);
+      mpuAvailable = true;
+      mpuRawMode = true;
+      mpuAddress = detectedAddr;
+      Serial.println("[OK] MPU6050 Native I2C driver online on GPIO21/GPIO22 (±4g, ±500°/s).");
+    } else {
+      Serial.println("[WARN] MPU6050 not detected at 0x68 or 0x69 on SDA=21, SCL=22!");
+      Serial.println("[DIAGNOSTIC] Running I2C bus scan on GPIO 21 (SDA) & GPIO 22 (SCL)...");
+      int foundDevices = 0;
+      for (byte addr = 1; addr < 127; addr++) {
+        Wire.beginTransmission(addr);
+        byte err = Wire.endTransmission();
+        if (err == 0) {
+          Serial.printf("   -> Discovered active I2C device at address 0x%02X\n", addr);
+          foundDevices++;
+        }
+      }
+      if (foundDevices == 0) {
+        Serial.println("   -> [NO I2C RESPONSE] No devices found on GPIO 21 & 22!");
+        Serial.println("   -> CHECK 1: If using GY-521, connect VCC to ESP32 'VIN / 5V' instead of 3.3V (due to onboard regulator drop).");
+        Serial.println("   -> CHECK 2: Connect AD0 pin of MPU6050 to GND.");
+        Serial.println("   -> CHECK 3: Verify SDA->GPIO21 and SCL->GPIO22 are not reversed or loose.");
+      }
     }
   }
 
@@ -230,18 +322,22 @@ void loop() {
 
     txPacket.pkt = packetCounter;
 
-    // Read MPU6050
+    // Read MPU6050 (supports Adafruit driver and Native I2C fallback)
     if (mpuAvailable) {
-      sensors_event_t a, g, temp_mpu;
-      mpu.getEvent(&a, &g, &temp_mpu);
-      // Convert acceleration from m/s^2 to g (1 g = 9.80665 m/s^2)
-      txPacket.ax = a.acceleration.x / 9.80665f;
-      txPacket.ay = a.acceleration.y / 9.80665f;
-      txPacket.az = a.acceleration.z / 9.80665f;
-      // Convert angular velocity from rad/s to deg/s
-      txPacket.gx = g.gyro.x * (180.0f / PI);
-      txPacket.gy = g.gyro.y * (180.0f / PI);
-      txPacket.gz = g.gyro.z * (180.0f / PI);
+      if (mpuRawMode) {
+        readRawMPU(mpuAddress, txPacket.ax, txPacket.ay, txPacket.az, txPacket.gx, txPacket.gy, txPacket.gz);
+      } else {
+        sensors_event_t a, g, temp_mpu;
+        mpu.getEvent(&a, &g, &temp_mpu);
+        // Convert acceleration from m/s^2 to g (1 g = 9.80665 m/s^2)
+        txPacket.ax = a.acceleration.x / 9.80665f;
+        txPacket.ay = a.acceleration.y / 9.80665f;
+        txPacket.az = a.acceleration.z / 9.80665f;
+        // Convert angular velocity from rad/s to deg/s
+        txPacket.gx = g.gyro.x * (180.0f / PI);
+        txPacket.gy = g.gyro.y * (180.0f / PI);
+        txPacket.gz = g.gyro.z * (180.0f / PI);
+      }
     } else {
       txPacket.ax = NAN;
       txPacket.ay = NAN;
