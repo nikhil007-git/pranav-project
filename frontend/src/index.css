@@ -14,7 +14,7 @@
   --text-primary: #e6f1ff;
   --text-muted: #8892b0;
   --text-dim: #495670;
-  --font-heading: 'Orbitron', -apple-system, sans-serif;
+  --font-heading: 'Rajdhani', 'Orbitron', -apple-system, sans-serif;
   --font-body: 'IBM Plex Mono', monospace;
 }
 
@@ -316,9 +316,9 @@ header.mission-header {
 
 .card-title {
   font-family: var(--font-heading);
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
   color: var(--neon-cyan);
   display: flex;
