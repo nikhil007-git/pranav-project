@@ -116,16 +116,41 @@ void setup() {
 
   // 1. Initialize Primary I2C for MPU6050 (GPIO 21, GPIO 22)
   Wire.begin(MPU_SDA_PIN, MPU_SCL_PIN);
+  Wire.setClock(100000); // Standard 100kHz I2C clock for maximum stability
+  delay(150);            // Allow MPU-6050 power rail to settle
 
-  if (!mpu.begin(0x68, &Wire) && !mpu.begin(0x69, &Wire)) {
-    Serial.println("[WARN] MPU6050 not detected at 0x68 or 0x69 on SDA=21, SCL=22!");
-    mpuAvailable = false;
-  } else {
+  // Try connecting to MPU6050 with retries (checks both 0x68 and 0x69)
+  for (int attempt = 1; attempt <= 3 && !mpuAvailable; attempt++) {
+    if (mpu.begin(0x68, &Wire) || mpu.begin(0x69, &Wire)) {
+      mpuAvailable = true;
+      break;
+    }
+    delay(100);
+  }
+
+  if (mpuAvailable) {
     Serial.println("[OK] MPU6050 IMU initialized on GPIO21/GPIO22.");
     mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
     mpu.setGyroRange(MPU6050_RANGE_500_DEG);
     mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-    mpuAvailable = true;
+  } else {
+    Serial.println("[WARN] MPU6050 not detected at 0x68 or 0x69 on SDA=21, SCL=22!");
+    Serial.println("[DIAGNOSTIC] Running I2C bus scan on GPIO 21 (SDA) & GPIO 22 (SCL)...");
+    int foundDevices = 0;
+    for (byte addr = 1; addr < 127; addr++) {
+      Wire.beginTransmission(addr);
+      byte err = Wire.endTransmission();
+      if (err == 0) {
+        Serial.printf("   -> Discovered active I2C device at address 0x%02X\n", addr);
+        foundDevices++;
+      }
+    }
+    if (foundDevices == 0) {
+      Serial.println("   -> [NO I2C RESPONSE] No devices found on GPIO 21 & 22!");
+      Serial.println("   -> CHECK 1: If using GY-521, connect VCC to ESP32 'VIN / 5V' instead of 3.3V (due to onboard regulator drop).");
+      Serial.println("   -> CHECK 2: Connect AD0 pin of MPU6050 to GND.");
+      Serial.println("   -> CHECK 3: Verify SDA->GPIO21 and SCL->GPIO22 are not reversed or loose.");
+    }
   }
 
   // 2. Initialize Secondary I2C for BMP280 (GPIO 25, GPIO 26)
