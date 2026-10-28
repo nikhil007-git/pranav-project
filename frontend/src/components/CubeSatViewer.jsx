@@ -214,7 +214,7 @@ export default function CubeSatViewer({ packet }) {
     <div className="glass-card">
       <div className="card-header">
         <div className="card-title">
-          <Compass size={16} /> 1U Attitude Determination (ADCS)
+          <Compass size={16} /> 1U Altitude Determination (ADCS)
         </div>
         <span className="card-tag">MPU6050 Fusion</span>
       </div>
