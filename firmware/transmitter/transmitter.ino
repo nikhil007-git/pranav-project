@@ -2,12 +2,12 @@
  * ======================================================================================
  * CubeSat 1U Onboard Telemetry Transmitter (ESP32)
  * ======================================================================================
- * Hardware Sensors:
- *   - MPU6050 (6-DOF IMU: Accel + Gyro): I2C (SDA=GPIO21, SCL=GPIO22)
- *   - BMP280 (Barometer & Altimeter):    I2C (SDA=GPIO21, SCL=GPIO22, Addr: 0x76 or 0x77)
+ * Hardware Sensors (Updated Pinout):
+ *   - MPU6050 (6-DOF IMU: Accel + Gyro): Primary I2C (SDA=GPIO21, SCL=GPIO22)
+ *   - BMP280 (Barometer & Altimeter):    Secondary I2C (SDA=GPIO25, SCL=GPIO26, Addr: 0x76/0x77)
  *   - DHT11 (Temperature & Humidity):   GPIO4
- *   - NEO-6M GPS (UART Serial2):        GPS TX -> ESP32 RX2 (GPIO16)
- *                                       GPS RX -> ESP32 TX2 (GPIO17)
+ *   - NEO-6M GPS (UART Serial2):        GPS TX -> ESP32 RX2 (GPIO15)
+ *                                       GPS RX -> Not Connected
  *
  * Telemetry Protocol:
  *   - Transmits packed struct via ESP-NOW broadcast (FF:FF:FF:FF:FF:FF)
@@ -27,14 +27,23 @@
 #include <TinyGPSPlus.h>
 
 // --------------------------------------------------
-// Pin Definitions
+// Pin Definitions (Matching Hardware Wiring Table)
 // --------------------------------------------------
-#define I2C_SDA_PIN      21
-#define I2C_SCL_PIN      22
+// MPU6050 on Primary I2C (Wire)
+#define MPU_SDA_PIN      21
+#define MPU_SCL_PIN      22
+
+// BMP280 on Secondary I2C (Wire1 / I2C_BMP)
+#define BMP_SDA_PIN      25
+#define BMP_SCL_PIN      26
+
+// DHT11
 #define DHT_PIN          4
 #define DHT_TYPE         DHT11
-#define GPS_RX_PIN       16   // ESP32 RX2 connects to GPS TX
-#define GPS_TX_PIN       17   // ESP32 TX2 connects to GPS RX
+
+// NEO-6M GPS on Serial2
+#define GPS_RX_PIN       15   // ESP32 RX2 connects to GPS TX
+#define GPS_TX_PIN       -1   // GPS RX is not connected
 #define GPS_BAUD         9600
 
 #define WIFI_CHANNEL     1
@@ -70,7 +79,11 @@ typedef struct __attribute__((packed)) {
 // Hardware Objects
 // --------------------------------------------------
 Adafruit_MPU6050 mpu;
-Adafruit_BMP280 bmp; // Uses default I2C Wire
+
+// Dedicated I2C bus instance for BMP280 on GPIO 25 & 26
+TwoWire I2C_BMP = TwoWire(1);
+Adafruit_BMP280 bmp(&I2C_BMP);
+
 DHT dht(DHT_PIN, DHT_TYPE);
 TinyGPSPlus gps;
 
@@ -101,27 +114,28 @@ void setup() {
   Serial.println("  ORBITRA CUBESAT TRANSMITTER (ESP-NOW)    ");
   Serial.println("===========================================");
 
-  // Initialize I2C bus
-  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+  // 1. Initialize Primary I2C for MPU6050 (GPIO 21, GPIO 22)
+  Wire.begin(MPU_SDA_PIN, MPU_SCL_PIN);
 
-  // 1. Initialize MPU6050
   if (!mpu.begin(0x68, &Wire) && !mpu.begin(0x69, &Wire)) {
-    Serial.println("[WARN] MPU6050 not detected at 0x68 or 0x69!");
+    Serial.println("[WARN] MPU6050 not detected at 0x68 or 0x69 on SDA=21, SCL=22!");
     mpuAvailable = false;
   } else {
-    Serial.println("[OK] MPU6050 IMU initialized.");
+    Serial.println("[OK] MPU6050 IMU initialized on GPIO21/GPIO22.");
     mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
     mpu.setGyroRange(MPU6050_RANGE_500_DEG);
     mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
     mpuAvailable = true;
   }
 
-  // 2. Initialize BMP280
+  // 2. Initialize Secondary I2C for BMP280 (GPIO 25, GPIO 26)
+  I2C_BMP.begin(BMP_SDA_PIN, BMP_SCL_PIN);
+
   if (!bmp.begin(0x76) && !bmp.begin(0x77)) {
-    Serial.println("[WARN] BMP280 not detected at 0x76 or 0x77!");
+    Serial.println("[WARN] BMP280 not detected at 0x76 or 0x77 on SDA=25, SCL=26!");
     bmpAvailable = false;
   } else {
-    Serial.println("[OK] BMP280 Barometer/Altimeter initialized.");
+    Serial.println("[OK] BMP280 Barometer/Altimeter initialized on GPIO25/GPIO26.");
     bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
                     Adafruit_BMP280::SAMPLING_X2,     // Temperature oversampling
                     Adafruit_BMP280::SAMPLING_X16,    // Pressure oversampling
@@ -130,13 +144,13 @@ void setup() {
     bmpAvailable = true;
   }
 
-  // 3. Initialize DHT11
+  // 3. Initialize DHT11 on GPIO 4
   dht.begin();
-  Serial.println("[OK] DHT11 sensor initialized.");
+  Serial.println("[OK] DHT11 sensor initialized on GPIO4.");
 
-  // 4. Initialize NEO-6M GPS on Serial2
+  // 4. Initialize NEO-6M GPS on Serial2 (RX = GPIO15, TX = Not Connected)
   SerialGPS.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-  Serial.println("[OK] GPS Serial2 initialized at 9600 baud.");
+  Serial.println("[OK] GPS Serial2 initialized at 9600 baud on RX=GPIO15.");
 
   // 5. Initialize WiFi in Station Mode for ESP-NOW
   WiFi.mode(WIFI_STA);

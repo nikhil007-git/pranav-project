@@ -123,21 +123,21 @@ http://localhost:3000
 
 | Sensor / Module | Sensor Pin | ESP32 Pin | Interface / Notes |
 | :--- | :--- | :--- | :--- |
-| **MPU6050** (6-DOF IMU) | VCC | 3.3V / 5V | Power |
+| **MPU6050** (6-DOF IMU) | VCC | 3.3V (3V3) | Power |
 | | GND | GND | Ground |
-| | SDA | **GPIO 21** | I2C Data (Shared with BMP280) |
-| | SCL | **GPIO 22** | I2C Clock (Shared with BMP280) |
-| **BMP280** (Barometer) | VCC | 3.3V | Power (Use 3.3V for BMP280) |
+| | SDA | **GPIO 21 (D21)** | Primary I2C Data (`Wire`) |
+| | SCL | **GPIO 22 (D22)** | Primary I2C Clock (`Wire`) |
+| **BMP280** (Pressure & Temp) | VCC (VIN) | 3.3V (3V3) | Power |
 | | GND | GND | Ground |
-| | SDA | **GPIO 21** | I2C Data (Shared with MPU6050) |
-| | SCL | **GPIO 22** | I2C Clock (Shared with MPU6050) |
-| **DHT11** (Temp / Humidity) | VCC | 3.3V / 5V | Power |
+| | SDA | **GPIO 25 (D25)** | Secondary I2C Data (`TwoWire(1)`) |
+| | SCL | **GPIO 26 (D26)** | Secondary I2C Clock (`TwoWire(1)`) |
+| **DHT11** (Temp & Humidity) | VCC | 3.3V (3V3) | Power |
 | | GND | GND | Ground |
-| | DATA / OUT | **GPIO 4** | Digital I/O (use 10k pullup if breakout lacks one) |
-| **NEO-6M GPS** | VCC | 3.3V / 5V | Power |
+| | DATA | **GPIO 4 (D4)** | Digital I/O |
+| **NEO-6M GPS** (Position & Speed) | VCC | 3.3V / 5V | Power |
 | | GND | GND | Ground |
-| | TX | **GPIO 16** | ESP32 Hardware `Serial2` RX2 |
-| | RX | **GPIO 17** | ESP32 Hardware `Serial2` TX2 |
+| | TX (module) | **GPIO 15 (D15)** | ESP32 Hardware `Serial2` RX |
+| | RX (module) | *Not connected* | Unconnected (GPS TX only) |
 
 > [!NOTE]
 > **DHT11 Sampling Speed**: The DHT11 hardware has an internal capacitive humidity sensor that requires ~1 to 2 seconds between consecutive measurements. The transmitter firmware queries the DHT11 every 2000 ms and reuses the cached value between reads so the main ESP-NOW loop runs at a steady 10 Hz without blocking.
