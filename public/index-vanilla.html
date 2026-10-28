@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ORBITRA-1 // CubeSat Telemetry Mission Control</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
+  
+  <!-- Libraries (CDN with local fallback) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>window.THREE || document.write('<script src="/vendor/three.min.js"><\/script>')</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script>window.Chart || document.write('<script src="/vendor/chart.umd.js"><\/script>')</script>
+
+  <style>
+    :root {
+      --bg-dark: #040813;
+      --bg-panel: rgba(8, 20, 42, 0.65);
+      --bg-panel-border: rgba(0, 240, 255, 0.25);
+      --bg-panel-hover: rgba(0, 240, 255, 0.45);
+      --neon-cyan: #00f0ff;
+      --neon-cyan-glow: rgba(0, 240, 255, 0.35);
+      --neon-green: #00ff9d;
+      --neon-green-glow: rgba(0, 255, 157, 0.4);
+      --neon-amber: #ffb800;
+      --neon-red: #ff3366;
+      --neon-red-glow: rgba(255, 51, 102, 0.6);
+      --neon-magenta: #ff00ea;
+      --text-primary: #e6f1ff;
+      --text-muted: #8892b0;
+      --text-dim: #495670;
+      --font-heading: 'Orbitron', -apple-system, sans-serif;
+      --font-body: 'IBM Plex Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(ellipse at 15% 0%, rgba(0, 110, 255, 0.15) 0%, transparent 60%),
+        radial-gradient(ellipse at 85% 100%, rgba(0, 240, 255, 0.1) 0%, transparent 60%),
+        linear-gradient(180deg, #030611 0%, #061126 50%, #030713 100%);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 12px 18px 24px;
+    }
+
+    /* Subtle telemetry scanline overlay */
+    body::before {
+      content: " ";
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+
+    /* Glassmorphism Panel Common Styles */
+    .glass-card {
+      background: var(--bg-panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--bg-panel-border);
+      border-radius: 8px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 12px 0 rgba(0, 240, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .glass-card:hover {
+      border-color: var(--bg-panel-hover);
+      box-shadow: 0 10px 36px 0 rgba(0, 0, 0, 0.6), inset 0 0 16px 0 rgba(0, 240, 255, 0.1);
+    }
+
+    .glass-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 8px; height: 8px;
+      border-top: 2px solid var(--neon-cyan);
+      border-left: 2px solid var(--neon-cyan);
+      pointer-events: none;
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 8px; height: 8px;
+      border-bottom: 2px solid var(--neon-cyan);
+      border-right: 2px solid var(--neon-cyan);
+      pointer-events: none;
+    }
+
+    /* =======================================================
+       HEADER / MISSION BAR
+       ======================================================= */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 20px;
+      margin-bottom: 16px;
+    }
+
+    .header-branding {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .sat-icon-wrapper {
+      width: 44px;
+      height: 44px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 12px var(--neon-cyan-glow);
+    }
+
+    .sat-icon-wrapper svg {
+      width: 26px;
+      height: 26px;
+      fill: var(--neon-cyan);
+    }
+
+    .brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 2.5px;
+      color: #ffffff;
+      text-shadow: 0 0 12px var(--neon-cyan-glow);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-subtitle {
+      font-size: 0.72rem;
+      letter-spacing: 1.5px;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .telemetry-status-bar {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      background: rgba(4, 12, 28, 0.8);
+      padding: 8px 18px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    .status-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .status-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .status-value {
+      font-family: var(--font-heading);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    /* Link status badge */
+    .link-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-family: var(--font-heading);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .link-waiting {
+      background: rgba(255, 184, 0, 0.15);
+      border: 1px solid var(--neon-amber);
+      color: var(--neon-amber);
+    }
+    .link-waiting .badge-dot {
+      background: var(--neon-amber);
+      box-shadow: 0 0 8px var(--neon-amber);
+    }
+
+    .link-ok {
+      background: rgba(0, 255, 157, 0.15);
+      border: 1px solid var(--neon-green);
+      color: var(--neon-green);
+    }
+    .link-ok .badge-dot {
+      background: var(--neon-green);
+      box-shadow: 0 0 10px var(--neon-green);
+      animation: pulse-green 1.5s infinite;
+    }
+
+    .link-lost {
+      background: rgba(255, 51, 102, 0.2);
+      border: 1px solid var(--neon-red);
+      color: var(--neon-red);
+      animation: flash-red 0.8s infinite;
+    }
+    .link-lost .badge-dot {
+      background: var(--neon-red);
+      box-shadow: 0 0 10px var(--neon-red);
+    }
+
+    @keyframes pulse-green {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.25); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    @keyframes flash-red {
+      0%, 100% { opacity: 1; border-color: var(--neon-red); }
+      50% { opacity: 0.4; border-color: transparent; }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .action-btn {
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      font-family: var(--font-heading);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+    }
+
+    .action-btn:hover {
+      background: rgba(0, 240, 255, 0.2);
+      box-shadow: 0 0 12px var(--neon-cyan-glow);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .action-btn:active {
+      transform: translateY(1px);
+    }
+
+    .action-btn.active {
+      background: rgba(255, 51, 102, 0.25);
+      border-color: var(--neon-red);
+      color: var(--neon-red);
+      box-shadow: 0 0 14px var(--neon-red-glow);
+    }
+
+    /* =======================================================
+       MAIN GRID LAYOUT
+       ======================================================= */
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 1.1fr 1.3fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 1200px) {
+      .dashboard-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Card Headers */
+    .card-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .card-title {
+      font-family: var(--font-heading);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-tag {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      border: 1px solid var(--text-dim);
+      padding: 2px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    /* =======================================================
+       3D CUBESAT ATTITUDE PANEL
+       ======================================================= */
+    #cubesat-viewport {
+      width: 100%;
+      height: 380px;
+      position: relative;
+      background: radial-gradient(circle at center, #0d1e3d 0%, #030814 85%);
+    }
+
+    #threejs-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .attitude-overlay {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: rgba(4, 10, 24, 0.8);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .attitude-footer {
+      padding: 14px 18px;
+      background: rgba(2, 6, 16, 0.7);
+      border-top: 1px solid rgba(0, 240, 255, 0.15);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .attitude-metrics {
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+
+    .att-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .att-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    .att-value {
+      font-family: var(--font-heading);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .yaw-warning {
+      font-size: 0.6rem;
+      color: var(--neon-amber);
+      display: block;
+      margin-top: 2px;
+    }
+
+    .reset-yaw-btn {
+      background: rgba(255, 184, 0, 0.1);
+      border: 1px solid var(--neon-amber);
+      color: var(--neon-amber);
+      font-family: var(--font-heading);
+      font-size: 0.68rem;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 1px;
+    }
+
+    .reset-yaw-btn:hover {
+      background: rgba(255, 184, 0, 0.25);
+      box-shadow: 0 0 10px rgba(255, 184, 0, 0.4);
+      color: #ffffff;
+    }
+
+    /* =======================================================
+       GPS TACTICAL RADAR PANEL
+       ======================================================= */
+    .gps-body {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      padding: 16px;
+      gap: 18px;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .gps-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .radar-wrapper {
+      position: relative;
+      width: 190px;
+      height: 190px;
+      margin: 0 auto;
+    }
+
+    #radar-canvas {
+      width: 190px;
+      height: 190px;
+      display: block;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(0, 240, 255, 0.05) 0%, rgba(3, 10, 24, 0.9) 70%);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), inset 0 0 12px rgba(0, 240, 255, 0.2);
+      border: 1px solid var(--neon-cyan);
+    }
+
+    .gps-details {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .gps-fix-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: var(--font-heading);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      width: fit-content;
+    }
+
+    .gps-fix-active {
+      background: rgba(0, 255, 157, 0.15);
+      border: 1px solid var(--neon-green);
+      color: var(--neon-green);
+    }
+
+    .gps-fix-waiting {
+      background: rgba(255, 184, 0, 0.15);
+      border: 1px solid var(--neon-amber);
+      color: var(--neon-amber);
+    }
+
+    .gps-coord-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .coord-box {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 240, 255, 0.12);
+    }
+
+    .coord-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .coord-val {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      color: #ffffff;
+      letter-spacing: 1px;
+    }
+
+    /* =======================================================
+       TELEMETRY GRIDS (RIGHT COLUMN)
+       ======================================================= */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .telemetry-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .telemetry-card {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .telem-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .telem-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .telem-title {
+      font-family: var(--font-heading);
+      font-size: 0.72rem;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .telem-val {
+      font-family: var(--font-heading);
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 1px;
+    }
+
+    .telem-subval {
+      font-size: 0.7rem;
+      color: var(--neon-cyan);
+      display: flex;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .chart-container {
+      width: 100%;
+      height: 110px;
+      position: relative;
+    }
+
+    /* Color Accents */
+    .accent-cyan { color: var(--neon-cyan); }
+    .accent-green { color: var(--neon-green); }
+    .accent-amber { color: var(--neon-amber); }
+    .accent-magenta { color: var(--neon-magenta); }
+
+    /* Footer & System info */
+    footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================
+       HEADER: MISSION CONTROL BANNER
+       ========================================== -->
+  <header class="glass-card">
+    <div class="header-branding">
+      <div class="sat-icon-wrapper">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.2l6 3.75v7.1L12 18.8l-6-3.75v-7.1l6-3.75zM11 9h2v6h-2V9zm-5 1h2v4H6v-4zm10 0h2v4h-2v-4z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">ORBITRA // CUBESAT-1</div>
+        <div class="brand-subtitle">Telemetry & ADCS Mission Control Ground Station</div>
+      </div>
+    </div>
+
+    <!-- Telemetry Link & Stream Stats -->
+    <div class="telemetry-status-bar">
+      <div class="status-item">
+        <span class="status-label">Ground Link</span>
+        <div id="link-badge" class="link-badge link-waiting">
+          <span class="badge-dot"></span>
+          <span id="link-text">WAITING FOR DATA</span>
+        </div>
+      </div>
+
+      <div class="status-item">
+        <span class="status-label">Frame Index</span>
+        <span id="pkt-counter" class="status-value accent-cyan">#---</span>
+      </div>
+
+      <div class="status-item">
+        <span class="status-label">Stream Rate</span>
+        <span id="pps-counter" class="status-value accent-green">0.0 PPS</span>
+      </div>
+    </div>
+
+    <!-- Mission Command Buttons -->
+    <div class="header-actions">
+      <button id="pause-btn" class="action-btn" title="Pause or resume live graphs">
+        <span id="pause-icon">⏸</span> <span id="pause-text">PAUSE GRAPHS</span>
+      </button>
+      <button id="record-btn" class="action-btn" title="Toggle recording packet stream">
+        <span id="rec-dot">⏺</span> <span id="record-text">RECORD</span>
+      </button>
+      <button id="csv-btn" class="action-btn" title="Download recorded session as CSV">
+        <span>⤓</span> DOWNLOAD CSV
+      </button>
+    </div>
+  </header>
+
+  <!-- ==========================================
+       DASHBOARD BODY GRID
+       ========================================== -->
+  <div class="dashboard-container">
+
+    <!-- LEFT COLUMN: 3D ADCS & GPS -->
+    <div class="column">
+      
+      <!-- 1. 3D CubeSat Attitude Determination (ADCS) Panel -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🛰️</span> 1U Attitude Determination (ADCS)
+          </div>
+          <span class="card-tag">MPU6050 Fusion</span>
+        </div>
+
+        <div id="cubesat-viewport">
+          <div class="attitude-overlay">
+            Euler Mapping: [YZX] | Filter: α=0.98 Slerp
+          </div>
+          <canvas id="threejs-canvas"></canvas>
+        </div>
+
+        <div class="attitude-footer">
+          <div class="attitude-metrics">
+            <div class="att-item">
+              <span class="att-label">ROLL (X)</span>
+              <span id="att-roll" class="att-value accent-cyan">0.0°</span>
+            </div>
+            <div class="att-item">
+              <span class="att-label">PITCH (Y)</span>
+              <span id="att-pitch" class="att-value accent-green">0.0°</span>
+            </div>
+            <div class="att-item">
+              <span class="att-label">YAW (Z)</span>
+              <span id="att-yaw" class="att-value accent-amber">0.0°</span>
+              <span class="yaw-warning">relative, drifts over time</span>
+            </div>
+          </div>
+          <button id="reset-yaw-btn" class="reset-yaw-btn" title="Reset relative yaw integration to zero">
+            RESET YAW
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. GPS Navigation & Radar Canvas Panel -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>📡</span> Tactical GPS Tracking (NEO-6M)
+          </div>
+          <span class="card-tag">UART Serial2</span>
+        </div>
+
+        <div class="gps-body">
+          <div class="radar-wrapper">
+            <canvas id="radar-canvas" width="190" height="190"></canvas>
+          </div>
+          <div class="gps-details">
+            <div id="gps-fix-badge" class="gps-fix-pill gps-fix-waiting">
+              <span>●</span> <span id="gps-fix-text">WAITING FOR FIX</span>
+            </div>
+            <div class="gps-coord-grid">
+              <div class="coord-box">
+                <div class="coord-label">LATITUDE</div>
+                <div id="gps-lat" class="coord-val">-</div>
+              </div>
+              <div class="coord-box">
+                <div class="coord-label">LONGITUDE</div>
+                <div id="gps-lon" class="coord-val">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: SENSOR TELEMETRY GRIDS -->
+    <div class="column">
+      <div class="telemetry-grid">
+
+        <!-- Card 1: Linear Acceleration XYZ -->
+        <div class="glass-card telemetry-card">
+          <div class="telem-top">
+            <div class="telem-info">
+              <span class="telem-title">Acceleration XYZ</span>
+              <span id="val-acc-mag" class="telem-val">-- <small style="font-size:0.8rem;color:var(--text-muted)">g</small></span>
+              <div class="telem-subval">
+                <span style="color: #00f0ff">X: <b id="val-ax">-</b></span>
+                <span style="color: #ffb800">Y: <b id="val-ay">-</b></span>
+                <span style="color: #00ff9d">Z: <b id="val-az">-</b></span>
+              </div>
+            </div>
+            <span class="card-tag">MPU6050</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-acc"></canvas>
+          </div>
+        </div>
+
+        <!-- Card 2: Angular Velocity XYZ -->
+        <div class="glass-card telemetry-card">
+          <div class="telem-top">
+            <div class="telem-info">
+              <span class="telem-title">Angular Velocity XYZ</span>
+              <span id="val-gyro-mag" class="telem-val">-- <small style="font-size:0.8rem;color:var(--text-muted)">°/s</small></span>
+              <div class="telem-subval">
+                <span style="color: #00f0ff">X: <b id="val-gx">-</b></span>
+                <span style="color: #ff00ea">Y: <b id="val-gy">-</b></span>
+                <span style="color: #ffb800">Z: <b id="val-gz">-</b></span>
+              </div>
+            </div>
+            <span class="card-tag">MPU6050</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-gyro"></canvas>
+          </div>
+        </div>
+
+        <!-- Card 3: Barometric Pressure -->
+        <div class="glass-card telemetry-card">
+          <div class="telem-top">
+            <div class="telem-info">
+              <span class="telem-title">Barometric Pressure</span>
+              <span id="val-press" class="telem-val">-- <small style="font-size:0.8rem;color:var(--text-muted)">hPa</small></span>
+            </div>
+            <span class="card-tag">BMP280</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-press"></canvas>
+          </div>
+        </div>
+
+        <!-- Card 4: Pressure Altitude -->
+        <div class="glass-card telemetry-card">
+          <div class="telem-top">
+            <div class="telem-info">
+              <span class="telem-title">Estimated Altitude</span>
+              <span id="val-alt" class="telem-val">-- <small style="font-size:0.8rem;color:var(--text-muted)">m</small></span>
+            </div>
+            <span class="card-tag">BMP280</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-alt"></canvas>
+          </div>
+        </div>
+
+        <!-- Card 5: Core Temperature -->
+        <div class="glass-card telemetry-card">
+          <div class="telem-top">
+            <div class="telem-info">
+              <span class="telem-title">Bus Temperature</span>
+              <span id="val-temp" class="telem-val">-- <small style="font-size:0.8rem;color:var(--text-muted)">°C</small></span>
+            </div>
+            <span class="card-tag">DHT11 / BMP</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-temp"></canvas>
+          </div>
+        </div>
+
+        <!-- Card 6: Relative Humidity -->
+        <div class="glass-card telemetry-card">
+          <div class="telem-top">
+            <div class="telem-info">
+              <span class="telem-title">Relative Humidity</span>
+              <span id="val-hum" class="telem-val">-- <small style="font-size:0.8rem;color:var(--text-muted)">%</small></span>
+            </div>
+            <span class="card-tag">DHT11</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-hum"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    ORBITRA-1 CUBESAT TELEMETRY // NASA OPEN MCT ARCHITECTURE INSPIRATION // BROADCAST VIA ESP-NOW & WEBSOCKETS
+  </footer>
+
+  <!-- ==========================================
+       MISSION CONTROL LOGIC
+       ========================================== -->
+  <script>
+    // ----------------------------------------------------
+    // 1. DATA STATE & RECORDING ENGINE
+    // ----------------------------------------------------
+    const MAX_HISTORY = 60;
+    let isGraphsPaused = false;
+    let isRecording = false;
+    let recordedPackets = [];
+    let lastPacketTime = 0;
+    let packetWindowCount = 0;
+    let lastWindowTime = performance.now();
+    let currentPPS = 0;
+
+    // Attitude filter state
+    const ALPHA = 0.98;
+    let filteredRoll = 0;
+    let filteredPitch = 0;
+    let filteredYaw = 0;
+    let lastAttitudeTime = null;
+
+    // GPS base position for radar tracking
+    let originLat = null;
+    let originLon = null;
+    let gpsTrail = []; // [{x, y, age}] in meters
+
+    // ----------------------------------------------------
+    // 2. DOM ELEMENT REFERENCES
+    // ----------------------------------------------------
+    const linkBadge = document.getElementById('link-badge');
+    const linkText = document.getElementById('link-text');
+    const pktCounter = document.getElementById('pkt-counter');
+    const ppsCounter = document.getElementById('pps-counter');
+    const pauseBtn = document.getElementById('pause-btn');
+    const pauseText = document.getElementById('pause-text');
+    const pauseIcon = document.getElementById('pause-icon');
+    const recordBtn = document.getElementById('record-btn');
+    const recordText = document.getElementById('record-text');
+    const csvBtn = document.getElementById('csv-btn');
+    const resetYawBtn = document.getElementById('reset-yaw-btn');
+
+    const attRollEl = document.getElementById('att-roll');
+    const attPitchEl = document.getElementById('att-pitch');
+    const attYawEl = document.getElementById('att-yaw');
+
+    const valAccMag = document.getElementById('val-acc-mag');
+    const valAx = document.getElementById('val-ax');
+    const valAy = document.getElementById('val-ay');
+    const valAz = document.getElementById('val-az');
+
+    const valGyroMag = document.getElementById('val-gyro-mag');
+    const valGx = document.getElementById('val-gx');
+    const valGy = document.getElementById('val-gy');
+    const valGz = document.getElementById('val-gz');
+
+    const valPress = document.getElementById('val-press');
+    const valAlt = document.getElementById('val-alt');
+    const valTemp = document.getElementById('val-temp');
+    const valHum = document.getElementById('val-hum');
+
+    const gpsFixBadge = document.getElementById('gps-fix-badge');
+    const gpsFixText = document.getElementById('gps-fix-text');
+    const gpsLat = document.getElementById('gps-lat');
+    const gpsLon = document.getElementById('gps-lon');
+
+    // Safe display helper
+    function fmt(val, decimals = 1, fallback = '-') {
+      if (val === null || val === undefined || isNaN(val)) return fallback;
+      return Number(val).toFixed(decimals);
+    }
+
+    // ----------------------------------------------------
+    // 3. CHART.JS SETUP (60-PACKET ROLLING WINDOWS)
+    // ----------------------------------------------------
+    Chart.defaults.color = '#8892b0';
+    Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+    Chart.defaults.font.size = 10;
+
+    function createChart(ctx, datasets, yLabel = '') {
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array(MAX_HISTORY).fill(''),
+          datasets: datasets.map(d => ({
+            ...d,
+            data: Array(MAX_HISTORY).fill(null),
+            borderWidth: 1.8,
+            pointRadius: 0,
+            tension: 0.25,
+            fill: false
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              mode: 'index',
+              intersect: false,
+              backgroundColor: 'rgba(4, 12, 28, 0.9)',
+              titleColor: '#00f0ff',
+              bodyFont: { family: "'IBM Plex Mono', monospace" },
+              borderColor: 'rgba(0, 240, 255, 0.3)',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            x: {
+              display: false,
+              grid: { display: false }
+            },
+            y: {
+              display: true,
+              position: 'right',
+              ticks: { maxTicksLimit: 4, color: '#495670' },
+              grid: { color: 'rgba(0, 240, 255, 0.06)' }
+            }
+          }
+        }
+      });
+    }
+
+    // Initialize 6 charts
+    const chartAcc = createChart(document.getElementById('chart-acc'), [
+      { label: 'Ax', borderColor: '#00f0ff' },
+      { label: 'Ay', borderColor: '#ffb800' },
+      { label: 'Az', borderColor: '#00ff9d' }
+    ]);
+
+    const chartGyro = createChart(document.getElementById('chart-gyro'), [
+      { label: 'Gx', borderColor: '#00f0ff' },
+      { label: 'Gy', borderColor: '#ff00ea' },
+      { label: 'Gz', borderColor: '#ffb800' }
+    ]);
+
+    const chartPress = createChart(document.getElementById('chart-press'), [
+      { label: 'Press', borderColor: '#a855f7' }
+    ]);
+
+    const chartAlt = createChart(document.getElementById('chart-alt'), [
+      { label: 'Alt', borderColor: '#00ff9d' }
+    ]);
+
+    const chartTemp = createChart(document.getElementById('chart-temp'), [
+      { label: 'Temp', borderColor: '#ff7700' }
+    ]);
+
+    const chartHum = createChart(document.getElementById('chart-hum'), [
+      { label: 'Hum', borderColor: '#00f0ff' }
+    ]);
+
+    function appendChartData(chart, values) {
+      if (isGraphsPaused) return;
+      const data = chart.data;
+      data.datasets.forEach((ds, i) => {
+        ds.data.push(values[i] !== undefined ? values[i] : null);
+        if (ds.data.length > MAX_HISTORY) {
+          ds.data.shift();
+        }
+      });
+      chart.update('none'); // Update immediately without animation lag
+    }
+
+    // ----------------------------------------------------
+    // 4. THREE.JS 3D CUBESAT PANEL (1U Cube with Solar Panels)
+    // ----------------------------------------------------
+    const viewport = document.getElementById('cubesat-viewport');
+    const canvas3d = document.getElementById('threejs-canvas');
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, viewport.clientWidth / viewport.clientHeight, 0.1, 100);
+    camera.position.set(2.8, 2.2, 3.2);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas3d, antialias: true, alpha: true });
+    renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Ambient & Directional Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0x00f0ff, 1.2);
+    dirLight1.position.set(5, 10, 7);
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0x3b82f6, 0.7);
+    dirLight2.position.set(-5, -5, -5);
+    scene.add(dirLight2);
+
+    // CubeSat Main Root Group
+    const cubesat = new THREE.Group();
+    scene.add(cubesat);
+
+    // Procedural solar cell texture canvas
+    function createSolarPanelTexture() {
+      const c = document.createElement('canvas');
+      c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      // Dark deep space blue background
+      ctx.fillStyle = '#08142b';
+      ctx.fillRect(0, 0, 256, 256);
+      
+      // Solar cell grid
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i <= 256; i += 32) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 256); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i); ctx.stroke();
+      }
+      
+      // Fine busbars
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1;
+      for (let i = 16; i <= 256; i += 32) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 256); ctx.stroke();
+      }
+      return new THREE.CanvasTexture(c);
+    }
+
+    const solarTexture = createSolarPanelTexture();
+    const solarMaterial = new THREE.MeshStandardMaterial({
+      map: solarTexture,
+      roughness: 0.25,
+      metalness: 0.85
+    });
+
+    // Gold foil material for top and bottom chassis faces
+    const goldMaterial = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      roughness: 0.35,
+      metalness: 0.95
+    });
+
+    // 1U Cube (aspect 1:1:1): side faces have solar panels, top/bottom gold chassis
+    // Order of materials in BoxGeometry: +X, -X, +Y (top), -Y (bottom), +Z, -Z
+    const materials = [
+      solarMaterial, // +X
+      solarMaterial, // -X
+      goldMaterial,  // +Y (Top)
+      goldMaterial,  // -Y (Bottom)
+      solarMaterial, // +Z
+      solarMaterial  // -Z
+    ];
+
+    const cubeGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+    const cubeMesh = new THREE.Mesh(cubeGeo, materials);
+    cubesat.add(cubeMesh);
+
+    // Neon Cyan Edge Lines
+    const edgesGeo = new THREE.EdgesGeometry(cubeGeo);
+    const edgesMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, linewidth: 2 });
+    const edgeLines = new THREE.LineSegments(edgesGeo, edgesMat);
+    cubesat.add(edgeLines);
+
+    // Gold Antenna extending from top (+Y face)
+    const antennaGroup = new THREE.Group();
+    const rodGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.85, 16);
+    const rodMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
+    const antennaRod = new THREE.Mesh(rodGeo, rodMat);
+    antennaRod.position.set(0, 0.425, 0);
+    antennaGroup.add(antennaRod);
+
+    const tipGeo = new THREE.SphereGeometry(0.045, 16, 16);
+    const tipMat = new THREE.MeshStandardMaterial({ color: 0xff4400, emissive: 0xff2200, roughness: 0.3 });
+    const antennaTip = new THREE.Mesh(tipGeo, tipMat);
+    antennaTip.position.set(0, 0.85, 0);
+    antennaGroup.add(antennaTip);
+
+    antennaGroup.position.set(0.35, 0.6, 0.35); // corner mount
+    antennaGroup.rotation.z = -0.15;
+    cubesat.add(antennaGroup);
+
+    // RGB Axes Helper attached to satellite body (Red=X, Green=Y, Blue=Z)
+    const axesHelper = new THREE.AxesHelper(1.1);
+    cubesat.add(axesHelper);
+
+    // Target quaternion for smooth slerp interpolation
+    const targetQuaternion = new THREE.Quaternion();
+
+    // Handle viewport resize
+    window.addEventListener('resize', () => {
+      const width = viewport.clientWidth;
+      const height = viewport.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    });
+
+    // ----------------------------------------------------
+    // 5. GPS TACTICAL RADAR CANVAS
+    // ----------------------------------------------------
+    const radarCanvas = document.getElementById('radar-canvas');
+    const radarCtx = radarCanvas.getContext('2d');
+    let radarSweepAngle = 0;
+
+    function drawRadar() {
+      const w = radarCanvas.width;
+      const h = radarCanvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const r = cx - 8;
+
+      radarCtx.clearRect(0, 0, w, h);
+
+      // Concentric range rings
+      radarCtx.strokeStyle = 'rgba(0, 240, 255, 0.2)';
+      radarCtx.lineWidth = 1;
+      [0.33, 0.66, 1.0].forEach(factor => {
+        radarCtx.beginPath();
+        radarCtx.arc(cx, cy, r * factor, 0, Math.PI * 2);
+        radarCtx.stroke();
+      });
+
+      // Crosshairs
+      radarCtx.beginPath();
+      radarCtx.moveTo(cx, cy - r); radarCtx.lineTo(cx, cy + r);
+      radarCtx.moveTo(cx - r, cy); radarCtx.lineTo(cx + r, cy);
+      radarCtx.stroke();
+
+      // Bearing Labels
+      radarCtx.fillStyle = '#495670';
+      radarCtx.font = "9px 'Orbitron', monospace";
+      radarCtx.textAlign = 'center';
+      radarCtx.fillText('N', cx, cy - r + 12);
+      radarCtx.fillText('S', cx, cy + r - 4);
+      radarCtx.fillText('E', cx + r - 10, cy + 3);
+      radarCtx.fillText('W', cx - r + 10, cy + 3);
+
+      // Rotating radar sweep line with fading gradient sector
+      radarSweepAngle = (radarSweepAngle + 0.04) % (Math.PI * 2);
+      
+      const sweepGrad = radarCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      sweepGrad.addColorStop(0, 'rgba(0, 240, 255, 0.35)');
+      sweepGrad.addColorStop(1, 'rgba(0, 240, 255, 0.0)');
+
+      radarCtx.save();
+      radarCtx.beginPath();
+      radarCtx.moveTo(cx, cy);
+      radarCtx.arc(cx, cy, r, radarSweepAngle - 0.5, radarSweepAngle);
+      radarCtx.closePath();
+      radarCtx.fillStyle = sweepGrad;
+      radarCtx.fill();
+      radarCtx.restore();
+
+      // Sweep frontier line
+      radarCtx.strokeStyle = '#00f0ff';
+      radarCtx.lineWidth = 1.5;
+      radarCtx.beginPath();
+      radarCtx.moveTo(cx, cy);
+      radarCtx.lineTo(cx + r * Math.cos(radarSweepAngle), cy + r * Math.sin(radarSweepAngle));
+      radarCtx.stroke();
+
+      // Plot GPS relative trail points
+      if (gpsTrail.length > 0) {
+        gpsTrail.forEach((pt, idx) => {
+          const alpha = (idx + 1) / gpsTrail.length;
+          // Scale: 100 meters mapped to radar radius
+          const scale = r / 100;
+          const px = cx + pt.x * scale;
+          const py = cy - pt.y * scale;
+
+          radarCtx.fillStyle = `rgba(0, 255, 157, ${alpha})`;
+          radarCtx.beginPath();
+          radarCtx.arc(px, py, idx === gpsTrail.length - 1 ? 4 : 2, 0, Math.PI * 2);
+          radarCtx.fill();
+        });
+      } else {
+        // Center home dot
+        radarCtx.fillStyle = 'rgba(0, 240, 255, 0.8)';
+        radarCtx.beginPath();
+        radarCtx.arc(cx, cy, 3, 0, Math.PI * 2);
+        radarCtx.fill();
+      }
+    }
+
+    // Main 60 FPS Render Loop
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Smooth attitude motion using quaternion slerp
+      cubesat.quaternion.slerp(targetQuaternion, 0.25);
+
+      renderer.render(scene, camera);
+      drawRadar();
+    }
+    animate();
+
+    // ----------------------------------------------------
+    // 6. TELEMETRY PACKET PROCESSOR
+    // ----------------------------------------------------
+    function handleIncomingPacket(pkt) {
+      const now = performance.now();
+      lastPacketTime = now;
+      packetWindowCount++;
+
+      // Update link watchdog status to LINK OK
+      updateLinkStatus('ok');
+
+      // 1. Header Metrics
+      pktCounter.textContent = '#' + (pkt.pkt !== undefined ? pkt.pkt : '---');
+
+      // 2. ADCS Complementary Filter & Three.js Orientation
+      // MPU6050: ax, ay, az in g; gx, gy, gz in deg/s
+      if (pkt.ax !== null && pkt.ay !== null && pkt.az !== null) {
+        const ax = pkt.ax;
+        const ay = pkt.ay;
+        const az = pkt.az;
+
+        // Roll = atan2(ay, az), Pitch = atan2(-ax, hypot(ay, az))
+        const rollAcc = Math.atan2(ay, az);
+        const pitchAcc = Math.atan2(-ax, Math.hypot(ay, az));
+
+        // Time delta for integration
+        const dt = lastAttitudeTime ? Math.min((now - lastAttitudeTime) / 1000, 0.2) : 0.1;
+        lastAttitudeTime = now;
+
+        const gxRad = ((pkt.gx || 0) * Math.PI) / 180;
+        const gyRad = ((pkt.gy || 0) * Math.PI) / 180;
+        const gzRad = ((pkt.gz || 0) * Math.PI) / 180;
+
+        // Complementary filter: blend gyro integration with accelerometer
+        filteredRoll = ALPHA * (filteredRoll + gxRad * dt) + (1 - ALPHA) * rollAcc;
+        filteredPitch = ALPHA * (filteredPitch + gyRad * dt) + (1 - ALPHA) * pitchAcc;
+        filteredYaw = filteredYaw + gzRad * dt; // Integrated gyro Z only
+
+        // Map sensor axes to Three.js: Euler(roll, yaw, -pitch, 'YZX')
+        const euler = new THREE.Euler(filteredRoll, filteredYaw, -filteredPitch, 'YZX');
+        targetQuaternion.setFromEuler(euler);
+
+        // Display degrees under cube
+        const RAD_TO_DEG = 180 / Math.PI;
+        attRollEl.textContent = (filteredRoll * RAD_TO_DEG >= 0 ? '+' : '') + (filteredRoll * RAD_TO_DEG).toFixed(1) + '°';
+        attPitchEl.textContent = (filteredPitch * RAD_TO_DEG >= 0 ? '+' : '') + (filteredPitch * RAD_TO_DEG).toFixed(1) + '°';
+        attYawEl.textContent = (filteredYaw * RAD_TO_DEG >= 0 ? '+' : '') + (filteredYaw * RAD_TO_DEG).toFixed(1) + '°';
+      }
+
+      // 3. Telemetry Numbers & Magnitudes
+      // Acceleration XYZ
+      valAx.textContent = fmt(pkt.ax, 2);
+      valAy.textContent = fmt(pkt.ay, 2);
+      valAz.textContent = fmt(pkt.az, 2);
+      if (pkt.ax !== null && pkt.ay !== null && pkt.az !== null) {
+        const mag = Math.hypot(pkt.ax, pkt.ay, pkt.az);
+        valAccMag.innerHTML = `${mag.toFixed(2)} <small style="font-size:0.8rem;color:var(--text-muted)">g</small>`;
+      } else {
+        valAccMag.innerHTML = `-- <small style="font-size:0.8rem;color:var(--text-muted)">g</small>`;
+      }
+
+      // Angular velocity XYZ
+      valGx.textContent = fmt(pkt.gx, 1);
+      valGy.textContent = fmt(pkt.gy, 1);
+      valGz.textContent = fmt(pkt.gz, 1);
+      if (pkt.gx !== null && pkt.gy !== null && pkt.gz !== null) {
+        const gyroMag = Math.hypot(pkt.gx, pkt.gy, pkt.gz);
+        valGyroMag.innerHTML = `${gyroMag.toFixed(1)} <small style="font-size:0.8rem;color:var(--text-muted)">°/s</small>`;
+      } else {
+        valGyroMag.innerHTML = `-- <small style="font-size:0.8rem;color:var(--text-muted)">°/s</small>`;
+      }
+
+      // Environmental Sensors
+      valPress.innerHTML = `${fmt(pkt.press, 1)} <small style="font-size:0.8rem;color:var(--text-muted)">hPa</small>`;
+      valAlt.innerHTML = `${fmt(pkt.alt, 1)} <small style="font-size:0.8rem;color:var(--text-muted)">m</small>`;
+      valTemp.innerHTML = `${fmt(pkt.temp, 1)} <small style="font-size:0.8rem;color:var(--text-muted)">°C</small>`;
+      valHum.innerHTML = `${pkt.hum !== null && !isNaN(pkt.hum) ? Math.round(pkt.hum) : '-'} <small style="font-size:0.8rem;color:var(--text-muted)">%</small>`;
+
+      // 4. GPS State & Radar Plotting
+      if (pkt.gps_fix && pkt.lat !== null && pkt.lon !== null) {
+        gpsFixBadge.className = 'gps-fix-pill gps-fix-active';
+        gpsFixText.textContent = '3D FIX ACQUIRED';
+        gpsLat.textContent = Number(pkt.lat).toFixed(6) + '°';
+        gpsLon.textContent = Number(pkt.lon).toFixed(6) + '°';
+
+        if (originLat === null || originLon === null) {
+          originLat = pkt.lat;
+          originLon = pkt.lon;
+        }
+
+        // Approximate local displacement in meters (equirectangular projection)
+        const dLat = (pkt.lat - originLat) * 111320;
+        const dLon = (pkt.lon - originLon) * 111320 * Math.cos(originLat * Math.PI / 180);
+        gpsTrail.push({ x: dLon, y: dLat });
+        if (gpsTrail.length > 50) gpsTrail.shift();
+      } else {
+        gpsFixBadge.className = 'gps-fix-pill gps-fix-waiting';
+        gpsFixText.textContent = 'WAITING FOR FIX';
+        gpsLat.textContent = '-';
+        gpsLon.textContent = '-';
+      }
+
+      // 5. Update Charts
+      appendChartData(chartAcc, [pkt.ax, pkt.ay, pkt.az]);
+      appendChartData(chartGyro, [pkt.gx, pkt.gy, pkt.gz]);
+      appendChartData(chartPress, [pkt.press]);
+      appendChartData(chartAlt, [pkt.alt]);
+      appendChartData(chartTemp, [pkt.temp]);
+      appendChartData(chartHum, [pkt.hum]);
+
+      // 6. Record for CSV export if active
+      if (isRecording) {
+        recordedPackets.push({
+          timestamp: new Date().toISOString(),
+          ...pkt
+        });
+        recordText.textContent = `REC (${recordedPackets.length})`;
+      }
+    }
+
+    // ----------------------------------------------------
+    // 7. LINK WATCHDOG & PPS CALCULATOR
+    // ----------------------------------------------------
+    function updateLinkStatus(status) {
+      linkBadge.className = 'link-badge';
+      if (status === 'ok') {
+        linkBadge.classList.add('link-ok');
+        linkText.textContent = 'LINK OK';
+      } else if (status === 'lost') {
+        linkBadge.classList.add('link-lost');
+        linkText.textContent = 'LINK LOST';
+      } else {
+        linkBadge.classList.add('link-waiting');
+        linkText.textContent = 'WAITING FOR DATA';
+      }
+    }
+
+    // Watchdog timer: checks every 250ms
+    setInterval(() => {
+      const now = performance.now();
+      
+      // Calculate PPS every 1000ms
+      if (now - lastWindowTime >= 1000) {
+        currentPPS = (packetWindowCount / ((now - lastWindowTime) / 1000)).toFixed(1);
+        ppsCounter.textContent = `${currentPPS} PPS`;
+        packetWindowCount = 0;
+        lastWindowTime = now;
+      }
+
+      // If no packet arrived for 3 seconds -> Link lost
+      if (lastPacketTime > 0 && now - lastPacketTime > 3000) {
+        updateLinkStatus('lost');
+        ppsCounter.textContent = '0.0 PPS';
+      }
+    }, 250);
+
+    // ----------------------------------------------------
+    // 8. BUTTON CONTROLS (Pause, Record, CSV, Reset Yaw)
+    // ----------------------------------------------------
+    pauseBtn.addEventListener('click', () => {
+      isGraphsPaused = !isGraphsPaused;
+      if (isGraphsPaused) {
+        pauseBtn.classList.add('active');
+        pauseText.textContent = 'RESUME GRAPHS';
+        pauseIcon.textContent = '▶';
+      } else {
+        pauseBtn.classList.remove('active');
+        pauseText.textContent = 'PAUSE GRAPHS';
+        pauseIcon.textContent = '⏸';
+      }
+    });
+
+    recordBtn.addEventListener('click', () => {
+      isRecording = !isRecording;
+      if (isRecording) {
+        recordBtn.classList.add('active');
+        recordText.textContent = `REC (${recordedPackets.length})`;
+      } else {
+        recordBtn.classList.remove('active');
+        recordText.textContent = 'RECORD';
+      }
+    });
+
+    resetYawBtn.addEventListener('click', () => {
+      filteredYaw = 0;
+      attYawEl.textContent = '0.0°';
+    });
+
+    csvBtn.addEventListener('click', () => {
+      // Export either recorded packets or default session history
+      const listToExport = recordedPackets.length > 0 ? recordedPackets : [];
+      if (listToExport.length === 0) {
+        alert('No telemetry packets recorded yet. Click "RECORD" to start capturing a mission session!');
+        return;
+      }
+
+      const headers = [
+        'timestamp', 'pkt', 'ax', 'ay', 'az', 'gx', 'gy', 'gz',
+        'temp', 'hum', 'press', 'alt', 'lat', 'lon', 'gps_fix'
+      ];
+
+      const csvRows = [];
+      csvRows.push(headers.join(','));
+
+      listToExport.forEach(p => {
+        const row = headers.map(h => {
+          const val = p[h];
+          if (val === null || val === undefined) return '';
+          return typeof val === 'string' && val.includes(',') ? `"${val}"` : val;
+        });
+        csvRows.push(row.join(','));
+      });
+
+      const blob = new Blob([csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `cubesat_telemetry_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
+
+    // ----------------------------------------------------
+    // 9. WEBSOCKET AUTO-RECONNECT CLIENT
+    // ----------------------------------------------------
+    function connectWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}`;
+      console.log(`[WS] Connecting to telemetry bridge at ${wsUrl}...`);
+
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('[WS] Connected to ground station bridge.');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const packet = JSON.parse(event.data);
+          if (typeof packet.pkt !== 'undefined') {
+            handleIncomingPacket(packet);
+          }
+        } catch (e) {
+          console.warn('[WS] Malformed packet received:', event.data);
+        }
+      };
+
+      ws.onclose = () => {
+        console.warn('[WS] Telemetry bridge connection closed. Reconnecting in 1.5s...');
+        updateLinkStatus('waiting');
+        setTimeout(connectWebSocket, 1500);
+      };
+
+      ws.onerror = (err) => {
+        console.error('[WS] Bridge error:', err);
+        ws.close();
+      };
+    }
+
+    // Connect immediately on page load
+    connectWebSocket();
+  </script>
+</body>
+</html>
