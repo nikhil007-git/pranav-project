@@ -325,7 +325,15 @@ void loop() {
     // Read MPU6050 (supports Adafruit driver and Native I2C fallback)
     if (mpuAvailable) {
       if (mpuRawMode) {
-        readRawMPU(mpuAddress, txPacket.ax, txPacket.ay, txPacket.az, txPacket.gx, txPacket.gy, txPacket.gz);
+        float ax = 0, ay = 0, az = 0, gx = 0, gy = 0, gz = 0;
+        if (readRawMPU(mpuAddress, ax, ay, az, gx, gy, gz)) {
+          txPacket.ax = ax;
+          txPacket.ay = ay;
+          txPacket.az = az;
+          txPacket.gx = gx;
+          txPacket.gy = gy;
+          txPacket.gz = gz;
+        }
       } else {
         sensors_event_t a, g, temp_mpu;
         mpu.getEvent(&a, &g, &temp_mpu);
