@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import CubeSatViewer from './components/CubeSatViewer';
-import GpsRadar from './components/GpsRadar';
+import GpsNavigation3D from './components/GpsNavigation3D';
+import SubsystemStatus from './components/SubsystemStatus';
 import TelemetryCharts from './components/TelemetryCharts';
 
 export default function App() {
@@ -165,22 +166,22 @@ export default function App() {
       />
 
       <div className="dashboard-container">
-        {/* Left Column: 3D ADCS & Tactical GPS */}
+        {/* Left Column: 3D ADCS Satellite & 3D GPS Earth Navigation */}
         <div className="column">
           <CubeSatViewer packet={latestPacket} />
-          <GpsRadar packet={latestPacket} />
+          <GpsNavigation3D packet={latestPacket} />
         </div>
 
-        {/* Right Column: Telemetry Grids & Real-time Charts */}
+        {/* Right Column: Spacecraft Subsystem Health & Sensor Telemetry Grids */}
         <div className="column">
+          <SubsystemStatus packet={latestPacket} linkStatus={linkStatus} />
           <TelemetryCharts packet={latestPacket} isPaused={isPaused} />
         </div>
       </div>
 
       <footer>
-        ORBITRA-1 CUBESAT TELEMETRY // NASA OPEN MCT REACT DASHBOARD // BROADCAST VIA ESP-NOW & WEBSOCKETS
+        ORBITRA-1 CUBESAT TELEMETRY // TEAM FAHRENHEIT-451 // GROUND STATION
       </footer>
     </>
   );
 }
-
