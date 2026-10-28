@@ -39,11 +39,11 @@ export default function CubeSatViewer({ packet }) {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0x00ff66, 1.2);
+    const dirLight1 = new THREE.DirectionalLight(0x00d2ff, 1.4);
     dirLight1.position.set(5, 10, 7);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x10b981, 0.7);
+    const dirLight2 = new THREE.DirectionalLight(0x3b82f6, 0.8);
     dirLight2.position.set(-5, -5, -5);
     scene.add(dirLight2);
 
@@ -99,7 +99,7 @@ export default function CubeSatViewer({ packet }) {
 
     // Neon cyan edges
     const edgesGeo = new THREE.EdgesGeometry(cubeGeo);
-    const edgesMat = new THREE.LineBasicMaterial({ color: 0x00ff66, linewidth: 2 });
+    const edgesMat = new THREE.LineBasicMaterial({ color: 0x00d2ff, linewidth: 2 });
     const edgeLines = new THREE.LineSegments(edgesGeo, edgesMat);
     cubesat.add(edgeLines);
 

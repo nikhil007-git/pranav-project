@@ -93,7 +93,7 @@ export default function GpsNavigation3D({ packet }) {
     // Ambient and point light
     const amb = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(amb);
-    const pLight = new THREE.PointLight(0x00ff66, 1.5, 10);
+    const pLight = new THREE.PointLight(0x00d2ff, 1.6, 10);
     pLight.position.set(2, 3, 2);
     scene.add(pLight);
 
@@ -103,25 +103,25 @@ export default function GpsNavigation3D({ packet }) {
     // 1. Dark Core Globe
     const sphereGeo = new THREE.SphereGeometry(1.0, 36, 36);
     const sphereMat = new THREE.MeshStandardMaterial({
-      color: 0x07150b,
+      color: 0x060f1e,
       roughness: 0.8,
-      metalness: 0.2
+      metalness: 0.25
     });
     const globeSphere = new THREE.Mesh(sphereGeo, sphereMat);
     globeGroup.add(globeSphere);
 
-    // 2. Glowing Tactical Green Wireframe Grid
+    // 2. Glowing Electric Cyan Wireframe Grid
     const wireMat = new THREE.MeshBasicMaterial({
-      color: 0x00ff66,
+      color: 0x00d2ff,
       wireframe: true,
       transparent: true,
-      opacity: 0.22
+      opacity: 0.2
     });
     const wireMesh = new THREE.Mesh(sphereGeo, wireMat);
     globeGroup.add(wireMesh);
 
     // 3. Latitude & Longitude Reference Rings
-    const ringMat = new THREE.LineBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.45 });
+    const ringMat = new THREE.LineBasicMaterial({ color: 0x00d2ff, transparent: true, opacity: 0.5 });
     const equatorGeo = new THREE.BufferGeometry();
     const equatorPts = [];
     for (let i = 0; i <= 64; i++) {
@@ -145,20 +145,20 @@ export default function GpsNavigation3D({ packet }) {
     }
     const orbitGeo = new THREE.BufferGeometry();
     orbitGeo.setAttribute('position', new THREE.Float32BufferAttribute(orbitPts, 3));
-    const orbitLineMat = new THREE.LineBasicMaterial({ color: 0xffb800, transparent: true, opacity: 0.75 });
+    const orbitLineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 });
     const orbitLine = new THREE.Line(orbitGeo, orbitLineMat);
     globeGroup.add(orbitLine);
 
     // 5. Satellite Dot 'ORB-01'
     const satGroup = new THREE.Group();
     const satDotGeo = new THREE.SphereGeometry(0.045, 16, 16);
-    const satDotMat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
+    const satDotMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
     const satDot = new THREE.Mesh(satDotGeo, satDotMat);
     satGroup.add(satDot);
 
     // Glow ring around satellite
     const glowGeo = new THREE.RingGeometry(0.06, 0.08, 16);
-    const glowMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
+    const glowMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
     const glowRing = new THREE.Mesh(glowGeo, glowMat);
     satGroup.add(glowRing);
 

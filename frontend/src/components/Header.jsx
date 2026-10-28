@@ -38,7 +38,7 @@ export default function Header({
     <header className="glass-card mission-header">
       <div className="header-branding">
         <div className="sat-icon-wrapper">
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="var(--hud-green)">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="var(--electric-cyan)">
             <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.2l6 3.75v7.1L12 18.8l-6-3.75v-7.1l6-3.75zM11 9h2v6h-2V9zm-5 1h2v4H6v-4zm10 0h2v4h-2v-4z"/>
           </svg>
         </div>

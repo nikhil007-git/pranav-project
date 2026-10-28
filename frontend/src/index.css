@@ -1,18 +1,19 @@
 :root {
-  --bg-dark: #050806;
-  --bg-panel: rgba(10, 18, 13, 0.82);
-  --bg-panel-border: rgba(0, 255, 102, 0.2);
-  --bg-panel-hover: rgba(0, 255, 102, 0.4);
-  --hud-green: #00ff66;
-  --hud-green-glow: rgba(0, 255, 102, 0.35);
-  --hud-amber: #ffb800;
-  --hud-amber-glow: rgba(255, 184, 0, 0.35);
-  --hud-red: #ff2a55;
-  --hud-red-glow: rgba(255, 42, 85, 0.45);
-  --hud-cyan: #00f0ff;
-  --text-primary: #e6fced;
-  --text-muted: #82ab8c;
-  --text-dim: #4d6b54;
+  --bg-dark: #000206;
+  --bg-panel: rgba(8, 14, 26, 0.82);
+  --bg-panel-border: rgba(0, 210, 255, 0.22);
+  --bg-panel-hover: rgba(0, 210, 255, 0.45);
+  --electric-cyan: #00d2ff;
+  --electric-cyan-glow: rgba(0, 210, 255, 0.35);
+  --spacex-blue: #3b82f6;
+  --status-green: #10b981;
+  --status-green-glow: rgba(16, 185, 129, 0.4);
+  --status-amber: #f59e0b;
+  --status-red: #ef4444;
+  --status-red-glow: rgba(239, 68, 68, 0.5);
+  --text-primary: #ffffff;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
   --font-heading: 'Rajdhani', -apple-system, sans-serif;
   --font-body: 'IBM Plex Mono', monospace;
 }
@@ -26,9 +27,9 @@
 body {
   background-color: var(--bg-dark);
   background-image: 
-    radial-gradient(ellipse at 15% 0%, rgba(0, 255, 102, 0.07) 0%, transparent 60%),
-    radial-gradient(ellipse at 85% 100%, rgba(255, 184, 0, 0.05) 0%, transparent 60%),
-    linear-gradient(180deg, #050806 0%, #080d09 50%, #050806 100%);
+    radial-gradient(ellipse at 15% 0%, rgba(0, 210, 255, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 85% 100%, rgba(59, 130, 246, 0.06) 0%, transparent 60%),
+    linear-gradient(180deg, #000206 0%, #030712 50%, #000206 100%);
   color: var(--text-primary);
   font-family: var(--font-body);
   min-height: 100vh;
@@ -36,29 +37,27 @@ body {
   padding: 12px 18px 24px;
 }
 
-/* Tactical HUD scanline & radar grid overlay */
+/* OLED Space Grid Overlay */
 body::before {
   content: " ";
   position: fixed;
   top: 0; left: 0; bottom: 0; right: 0;
   background: 
-    linear-gradient(rgba(0, 255, 102, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 102, 0.03) 1px, transparent 1px),
-    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-  background-size: 28px 28px, 28px 28px, 100% 4px;
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 36px 36px;
   z-index: 9999;
   pointer-events: none;
-  opacity: 0.7;
 }
 
-/* Glassmorphic Tactical HUD Card */
+/* Glassmorphic SpaceX Obsidian Card */
 .glass-card {
   background: var(--bg-panel);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--bg-panel-border);
   border-radius: 6px;
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.65), inset 0 0 14px 0 rgba(0, 255, 102, 0.03);
+  box-shadow: 0 4px 28px 0 rgba(0, 0, 0, 0.8), inset 0 0 16px 0 rgba(0, 210, 255, 0.03);
   position: relative;
   overflow: hidden;
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
@@ -66,17 +65,17 @@ body::before {
 
 .glass-card:hover {
   border-color: var(--bg-panel-hover);
-  box-shadow: 0 6px 24px 0 rgba(0, 0, 0, 0.75), inset 0 0 16px 0 rgba(0, 255, 102, 0.06);
+  box-shadow: 0 6px 32px 0 rgba(0, 0, 0, 0.9), inset 0 0 20px 0 rgba(0, 210, 255, 0.08);
 }
 
-/* Tactical HUD Corner Brackets */
+/* SpaceX Sharp Corner Highlights */
 .glass-card::after {
   content: '';
   position: absolute;
   top: 0; left: 0;
-  width: 7px; height: 7px;
-  border-top: 2px solid var(--hud-green);
-  border-left: 2px solid var(--hud-green);
+  width: 8px; height: 8px;
+  border-top: 2px solid var(--electric-cyan);
+  border-left: 2px solid var(--electric-cyan);
   pointer-events: none;
 }
 
@@ -84,39 +83,39 @@ body::before {
   content: '';
   position: absolute;
   bottom: 0; right: 0;
-  width: 7px; height: 7px;
-  border-bottom: 2px solid var(--hud-green);
-  border-right: 2px solid var(--hud-green);
+  width: 8px; height: 8px;
+  border-bottom: 2px solid var(--electric-cyan);
+  border-right: 2px solid var(--electric-cyan);
   pointer-events: none;
 }
 
 /* Card Header */
 .card-header {
-  padding: 11px 16px;
-  border-bottom: 1px solid rgba(0, 255, 102, 0.12);
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(0, 10, 4, 0.45);
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .card-title {
   font-family: var(--font-heading);
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--hud-green);
+  color: var(--electric-cyan);
   display: flex;
   align-items: center;
   gap: 8px;
-  text-shadow: 0 0 8px rgba(0, 255, 102, 0.3);
+  text-shadow: 0 0 10px rgba(0, 210, 255, 0.35);
 }
 
 .card-tag {
   font-size: 0.65rem;
   color: var(--text-muted);
-  border: 1px solid rgba(0, 255, 102, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   padding: 2px 7px;
   border-radius: 3px;
   text-transform: uppercase;
@@ -146,32 +145,32 @@ header.mission-header {
 .sat-icon-wrapper {
   width: 44px;
   height: 44px;
-  background: rgba(0, 255, 102, 0.08);
-  border: 1px solid var(--hud-green);
-  border-radius: 6px;
+  background: rgba(0, 210, 255, 0.1);
+  border: 1px solid var(--electric-cyan);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 12px rgba(0, 255, 102, 0.25);
+  box-shadow: 0 0 14px var(--electric-cyan-glow);
 }
 
 .brand-title {
   font-family: var(--font-heading);
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: 2px;
   color: #ffffff;
   display: flex;
   align-items: center;
   gap: 10px;
-  text-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+  text-shadow: 0 0 12px rgba(0, 210, 255, 0.4);
 }
 
 .react-badge {
   font-size: 0.68rem;
-  background: rgba(0, 255, 102, 0.12);
-  border: 1px solid var(--hud-green);
-  color: var(--hud-green);
+  background: rgba(0, 210, 255, 0.14);
+  border: 1px solid var(--electric-cyan);
+  color: var(--electric-cyan);
   padding: 2px 8px;
   border-radius: 4px;
   font-weight: 700;
@@ -181,21 +180,20 @@ header.mission-header {
 .brand-subtitle {
   font-size: 0.72rem;
   letter-spacing: 1.5px;
-  color: var(--hud-green);
+  color: var(--electric-cyan);
   text-transform: uppercase;
   font-weight: 600;
   margin-top: 2px;
-  opacity: 0.85;
 }
 
 .telemetry-status-bar {
   display: flex;
   align-items: center;
   gap: 24px;
-  background: rgba(4, 10, 6, 0.85);
+  background: rgba(4, 8, 16, 0.9);
   padding: 8px 18px;
-  border-radius: 5px;
-  border: 1px solid rgba(0, 255, 102, 0.18);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .status-item {
@@ -214,7 +212,7 @@ header.mission-header {
 
 .status-value {
   font-family: var(--font-heading);
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   font-weight: 700;
   letter-spacing: 1px;
 }
@@ -240,33 +238,33 @@ header.mission-header {
 }
 
 .link-waiting {
-  background: rgba(255, 184, 0, 0.15);
-  border: 1px solid var(--hud-amber);
-  color: var(--hud-amber);
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid var(--status-amber);
+  color: var(--status-amber);
 }
 .link-waiting .badge-dot {
-  background: var(--hud-amber);
+  background: var(--status-amber);
 }
 
 .link-ok {
-  background: rgba(0, 255, 102, 0.15);
-  border: 1px solid var(--hud-green);
-  color: var(--hud-green);
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid var(--status-green);
+  color: var(--status-green);
 }
 .link-ok .badge-dot {
-  background: var(--hud-green);
-  box-shadow: 0 0 10px var(--hud-green);
+  background: var(--status-green);
+  box-shadow: 0 0 10px var(--status-green);
   animation: pulse-green 1.5s infinite;
 }
 
 .link-lost {
-  background: rgba(255, 42, 85, 0.2);
-  border: 1px solid var(--hud-red);
-  color: var(--hud-red);
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid var(--status-red);
+  color: var(--status-red);
   animation: flash-red 0.8s infinite;
 }
 .link-lost .badge-dot {
-  background: var(--hud-red);
+  background: var(--status-red);
 }
 
 @keyframes pulse-green {
@@ -276,7 +274,7 @@ header.mission-header {
 }
 
 @keyframes flash-red {
-  0%, 100% { opacity: 1; border-color: var(--hud-red); }
+  0%, 100% { opacity: 1; border-color: var(--status-red); }
   50% { opacity: 0.4; border-color: transparent; }
 }
 
@@ -287,9 +285,9 @@ header.mission-header {
 }
 
 .action-btn {
-  background: rgba(0, 255, 102, 0.05);
-  border: 1px solid rgba(0, 255, 102, 0.3);
-  color: var(--hud-green);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 210, 255, 0.35);
+  color: var(--electric-cyan);
   font-family: var(--font-heading);
   font-size: 0.78rem;
   font-weight: 700;
@@ -305,15 +303,15 @@ header.mission-header {
 }
 
 .action-btn:hover {
-  background: rgba(0, 255, 102, 0.18);
-  box-shadow: 0 0 10px var(--hud-green-glow);
+  background: rgba(0, 210, 255, 0.18);
+  box-shadow: 0 0 12px var(--electric-cyan-glow);
   color: #ffffff;
 }
 
 .action-btn.active {
-  background: rgba(255, 42, 85, 0.25);
-  border-color: var(--hud-red);
-  color: var(--hud-red);
+  background: rgba(239, 68, 68, 0.25);
+  border-color: var(--status-red);
+  color: var(--status-red);
 }
 
 /* =======================================================
@@ -344,7 +342,7 @@ header.mission-header {
   width: 100%;
   height: 340px;
   position: relative;
-  background: radial-gradient(circle at center, #0a160e 0%, #040805 85%);
+  background: radial-gradient(circle at center, #07101e 0%, #000308 85%);
 }
 
 .threejs-canvas {
@@ -357,8 +355,8 @@ header.mission-header {
   position: absolute;
   top: 12px;
   right: 14px;
-  background: rgba(5, 12, 7, 0.85);
-  border: 1px solid rgba(0, 255, 102, 0.2);
+  background: rgba(4, 8, 16, 0.88);
+  border: 1px solid rgba(0, 210, 255, 0.25);
   border-radius: 4px;
   padding: 5px 10px;
   font-size: 0.68rem;
@@ -368,8 +366,8 @@ header.mission-header {
 
 .attitude-footer {
   padding: 12px 18px;
-  background: rgba(3, 8, 4, 0.8);
-  border-top: 1px solid rgba(0, 255, 102, 0.12);
+  background: rgba(2, 4, 8, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -404,15 +402,15 @@ header.mission-header {
 
 .yaw-warning {
   font-size: 0.6rem;
-  color: var(--hud-amber);
+  color: var(--status-amber);
   display: block;
   margin-top: 2px;
 }
 
 .reset-yaw-btn {
-  background: rgba(255, 184, 0, 0.1);
-  border: 1px solid var(--hud-amber);
-  color: var(--hud-amber);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid var(--status-amber);
+  color: var(--status-amber);
   font-family: var(--font-heading);
   font-size: 0.72rem;
   padding: 5px 11px;
@@ -423,7 +421,7 @@ header.mission-header {
 }
 
 .reset-yaw-btn:hover {
-  background: rgba(255, 184, 0, 0.25);
+  background: rgba(245, 158, 11, 0.25);
   color: #ffffff;
 }
 
@@ -441,9 +439,9 @@ header.mission-header {
   width: 100%;
   height: 240px;
   position: relative;
-  border-radius: 5px;
-  background: radial-gradient(circle at center, #0a160e 0%, #040805 85%);
-  border: 1px solid rgba(0, 255, 102, 0.2);
+  border-radius: 6px;
+  background: radial-gradient(circle at center, #081224 0%, #000308 85%);
+  border: 1px solid rgba(0, 210, 255, 0.2);
   overflow: hidden;
 }
 
@@ -457,14 +455,14 @@ header.mission-header {
   position: absolute;
   top: 12px;
   left: 14px;
-  background: rgba(5, 12, 7, 0.9);
-  border: 1px solid rgba(0, 255, 102, 0.5);
+  background: rgba(4, 10, 20, 0.9);
+  border: 1px solid rgba(16, 185, 129, 0.5);
   padding: 3px 8px;
   border-radius: 4px;
   font-size: 0.68rem;
   font-family: var(--font-heading);
   font-weight: 700;
-  color: var(--hud-green);
+  color: var(--status-green);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -474,14 +472,14 @@ header.mission-header {
   position: absolute;
   top: 12px;
   right: 14px;
-  background: rgba(5, 12, 7, 0.9);
-  border: 1px solid rgba(255, 184, 0, 0.5);
+  background: rgba(4, 10, 20, 0.9);
+  border: 1px solid rgba(245, 158, 11, 0.5);
   padding: 3px 8px;
   border-radius: 4px;
   font-size: 0.68rem;
   font-family: var(--font-heading);
   font-weight: 700;
-  color: var(--hud-amber);
+  color: var(--status-amber);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -491,15 +489,15 @@ header.mission-header {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--hud-green);
-  box-shadow: 0 0 8px var(--hud-green);
+  background: var(--status-green);
+  box-shadow: 0 0 8px var(--status-green);
 }
 
 .dot-gold {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--hud-amber);
+  background: var(--status-amber);
 }
 
 .globe-status-bar {
@@ -508,8 +506,8 @@ header.mission-header {
   left: 0;
   right: 0;
   padding: 5px 12px;
-  background: rgba(3, 8, 4, 0.85);
-  border-top: 1px solid rgba(0, 255, 102, 0.1);
+  background: rgba(2, 4, 8, 0.88);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   justify-content: space-between;
   font-size: 0.65rem;
@@ -524,8 +522,8 @@ header.mission-header {
 }
 
 .nav-metric-box {
-  background: rgba(0, 8, 3, 0.45);
-  border: 1px solid rgba(0, 255, 102, 0.15);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 10px 12px;
   border-radius: 5px;
   display: flex;
@@ -541,7 +539,7 @@ header.mission-header {
 
 .nav-val {
   font-family: var(--font-heading);
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   font-weight: 700;
   color: #ffffff;
 }
@@ -554,8 +552,8 @@ header.mission-header {
 
 .nav-select {
   flex: 1;
-  background: rgba(6, 14, 8, 0.9);
-  border: 1px solid rgba(0, 255, 102, 0.25);
+  background: rgba(6, 12, 22, 0.95);
+  border: 1px solid rgba(0, 210, 255, 0.3);
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 0.72rem;
@@ -565,8 +563,8 @@ header.mission-header {
 }
 
 .nav-btn {
-  background: rgba(0, 255, 102, 0.05);
-  border: 1px solid rgba(0, 255, 102, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: var(--text-muted);
   font-family: var(--font-heading);
   font-size: 0.72rem;
@@ -578,14 +576,14 @@ header.mission-header {
 }
 
 .nav-btn.apply-btn {
-  border-color: var(--hud-green);
-  color: var(--hud-green);
+  border-color: var(--electric-cyan);
+  color: var(--electric-cyan);
 }
 
 .nav-btn.follow-btn.active {
-  border-color: var(--hud-green);
-  color: var(--hud-green);
-  background: rgba(0, 255, 102, 0.12);
+  border-color: var(--status-green);
+  color: var(--status-green);
+  background: rgba(16, 185, 129, 0.12);
 }
 
 .nav-subnote {
@@ -596,8 +594,8 @@ header.mission-header {
 
 /* Event Log */
 .event-log-container {
-  background: rgba(2, 6, 3, 0.45);
-  border: 1px solid rgba(0, 255, 102, 0.12);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 5px;
   padding: 10px 14px;
   display: flex;
@@ -649,18 +647,18 @@ header.mission-header {
 }
 
 .badge-info {
-  background: rgba(0, 255, 102, 0.15);
-  color: var(--hud-green);
+  background: rgba(0, 210, 255, 0.15);
+  color: var(--electric-cyan);
 }
 
 .badge-warn {
-  background: rgba(255, 42, 85, 0.2);
-  color: var(--hud-red);
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--status-red);
 }
 
 .badge-gps {
-  background: rgba(255, 184, 0, 0.15);
-  color: var(--hud-amber);
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--status-green);
 }
 
 .event-text {
@@ -705,7 +703,7 @@ header.mission-header {
 
 .meter-status {
   font-family: var(--font-heading);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 1px;
 }
@@ -713,7 +711,7 @@ header.mission-header {
 .meter-track {
   width: 100%;
   height: 5px;
-  background: rgba(0, 255, 102, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -724,29 +722,29 @@ header.mission-header {
 }
 
 .meter-cyan {
-  background: linear-gradient(90deg, #059669, #00ff66);
-  box-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+  background: linear-gradient(90deg, #0284c7, #00d2ff);
+  box-shadow: 0 0 10px rgba(0, 210, 255, 0.45);
 }
 
 .meter-green {
-  background: linear-gradient(90deg, #059669, #00ff66);
-  box-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+  background: linear-gradient(90deg, #059669, #10b981);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.45);
 }
 
 .meter-amber {
-  background: linear-gradient(90deg, #d97706, #ffb800);
-  box-shadow: 0 0 8px rgba(255, 184, 0, 0.4);
+  background: linear-gradient(90deg, #d97706, #f59e0b);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
 }
 
 .meter-red {
-  background: linear-gradient(90deg, #dc2626, #ff2a55);
-  box-shadow: 0 0 8px rgba(255, 42, 85, 0.4);
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.45);
 }
 
-.text-cyan { color: var(--hud-green); }
-.text-green { color: var(--hud-green); }
-.text-amber { color: var(--hud-amber); }
-.text-red { color: var(--hud-red); }
+.text-cyan { color: var(--electric-cyan); }
+.text-green { color: var(--status-green); }
+.text-amber { color: var(--status-amber); }
+.text-red { color: var(--status-red); }
 
 /* Subsystem Health Table */
 .subsystem-table-wrapper {
@@ -765,13 +763,13 @@ header.mission-header {
   font-family: var(--font-heading);
   letter-spacing: 1.2px;
   font-weight: 700;
-  border-bottom: 1px solid rgba(0, 255, 102, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   text-align: left;
 }
 
 .subsystem-table td {
   padding: 10px 10px;
-  border-bottom: 1px solid rgba(0, 255, 102, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .sub-name {
@@ -780,7 +778,7 @@ header.mission-header {
 }
 
 .sub-source {
-  color: var(--hud-green);
+  color: var(--electric-cyan);
   font-family: var(--font-body);
 }
 
@@ -801,28 +799,28 @@ header.mission-header {
 }
 
 .pill-nominal {
-  background: rgba(0, 255, 102, 0.12);
-  color: var(--hud-green);
-  border: 1px solid rgba(0, 255, 102, 0.35);
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--status-green);
+  border: 1px solid rgba(16, 185, 129, 0.4);
 }
 
 .pill-alert-high {
-  background: rgba(255, 42, 85, 0.18);
-  color: var(--hud-red);
-  border: 1px solid rgba(255, 42, 85, 0.45);
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--status-red);
+  border: 1px solid rgba(239, 68, 68, 0.5);
   animation: pulse-alert 1s infinite;
 }
 
 .pill-alert-low {
-  background: rgba(255, 184, 0, 0.18);
-  color: var(--hud-amber);
-  border: 1px solid rgba(255, 184, 0, 0.4);
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--status-amber);
+  border: 1px solid rgba(245, 158, 11, 0.45);
 }
 
 .pill-simulated {
-  background: rgba(255, 184, 0, 0.12);
-  color: var(--hud-amber);
-  border: 1px solid rgba(255, 184, 0, 0.3);
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--status-amber);
+  border: 1px solid rgba(245, 158, 11, 0.35);
 }
 
 @keyframes pulse-alert {
@@ -854,8 +852,8 @@ header.mission-header {
 
 /* High alert card border */
 .card-alert-high {
-  border-color: rgba(255, 42, 85, 0.6) !important;
-  box-shadow: 0 0 16px rgba(255, 42, 85, 0.3) !important;
+  border-color: rgba(239, 68, 68, 0.65) !important;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.3) !important;
 }
 
 .telem-top {
@@ -881,7 +879,7 @@ header.mission-header {
 
 .telem-val {
   font-family: var(--font-heading);
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: 1px;
@@ -889,7 +887,7 @@ header.mission-header {
 
 .telem-subval {
   font-size: 0.7rem;
-  color: var(--hud-green);
+  color: var(--electric-cyan);
   display: flex;
   gap: 10px;
   margin-top: 2px;
@@ -912,15 +910,15 @@ header.mission-header {
 }
 
 .cond-normal {
-  background: rgba(0, 255, 102, 0.15);
-  color: var(--hud-green);
-  border: 1px solid rgba(0, 255, 102, 0.35);
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--status-green);
+  border: 1px solid rgba(16, 185, 129, 0.4);
 }
 
 .cond-high {
-  background: rgba(255, 42, 85, 0.2);
-  color: var(--hud-red);
-  border: 1px solid rgba(255, 42, 85, 0.55);
+  background: rgba(239, 68, 68, 0.22);
+  color: var(--status-red);
+  border: 1px solid rgba(239, 68, 68, 0.6);
   animation: pulse-alert 1s infinite;
 }
 
@@ -931,9 +929,9 @@ header.mission-header {
 }
 
 /* Accent Colors */
-.accent-cyan { color: var(--hud-green); }
-.accent-green { color: var(--hud-green); }
-.accent-amber { color: var(--hud-amber); }
+.accent-cyan { color: var(--electric-cyan); }
+.accent-green { color: var(--status-green); }
+.accent-amber { color: var(--status-amber); }
 
 footer {
   margin-top: 20px;
